@@ -66,19 +66,47 @@ int Server::handlePool() {
                 return 1;
             }
 
-            printf("new connection from: %s:%hu (fd: %d)\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port), client_fd);
+            this->clients.insert(new Client(client_fd, epoll_fd));
 
-            //TODO: insert client to set
-            ClientHandler * c = new ClientHandler(client_fd, epoll_fd);
-        } else {
-        // handle events from users
-            ((Handler*)ee.data.ptr)->handleEvent(ee.events);
+            printf("new connection from: %s:%hu (fd: %d)\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port), client_fd);
+        }
+        else {
+            // handle existing user - loop over clients and handle their requests, if so read data and handle their request
+            for (Client * client : this->clients) {
+                if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
+                    char buffer[1024];
+                    int count = read(client->getFd(), buffer, 1024);
+                    if (count > 0) {
+                        this->handleClient(client, buffer);
+                    }
+                }
+                if(ee.events & ~EPOLLIN && ee.data.fd == client->getFd()){
+                    this->clients.erase(client);
+                    delete client;
+                }
+            }
         }
     }
 }
 
-void Server::createKahoot(char *data, int owner_fd) {
-
+int Server::getMessageCode(char *buffer) {
+    int num1 = buffer[0] - 48;
+    int num2 = buffer[1] - 48;
+    return num1*10 + num2;
 }
 
+int Server::handleClient(Client *client, char * buffer) {
+    int msgcode = getMessageCode(buffer);
+    switch(msgcode) {
+        case 1:
+            printf("user with fd: %d - disconnected\n",client->getFd());
+            break;
+        case 2:
+            this->createKahoot(buffer, client);
+            break;
+    }
+}
 
+void Server::createKahoot(char *data, Client * owner) {
+
+}

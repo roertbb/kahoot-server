@@ -15,18 +15,21 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <sys/poll.h>
-#include "Handler.h"
-#include "ClientHandler.h"
+#include <unordered_set>
+#include "Client.h"
+
 
 class Server {
     int server_fd;
     struct sockaddr_in server_data;
-
+    std::unordered_set<Client*> clients;
 public:
     Server();
     int initSocketConnection();
     int handlePool();
-    void createKahoot(char * data, int owner_fd);
+    int handleClient(Client * client, char * buffer);
+    int getMessageCode(char * buffer);
+    void createKahoot(char * data, Client * owner);
 };
 
 
