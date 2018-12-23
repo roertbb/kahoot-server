@@ -13,15 +13,19 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/epoll.h>
+#include <sys/poll.h>
+#include "Handler.h"
+#include "ClientHandler.h"
 
 class Server {
-    int socket_desc;
+    int server_fd;
     struct sockaddr_in server_data;
 
 public:
     Server();
     int initSocketConnection();
-
+    int handlePool();
 };
 
 
