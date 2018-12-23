@@ -21,11 +21,18 @@ ClientHandler::~ClientHandler() {
 
 void ClientHandler::handleEvent(uint32_t events) {
     if (events & EPOLLIN) {
-        char buffer[256];
-        int count = read(this->fd, buffer, 256);
+        char buffer[1024];
+        int count = read(this->fd, buffer, 1024);
         if (count > 0) {
-            //handle event
-            printf("%s\n", buffer);
+            int msgcode = this->getMessageCode(buffer);
+            switch(msgcode) {
+                case 1:
+                    printf("player with fd: %d disconnected\n",this->fd);
+                    break;
+                case 2:
+                    //server->createKahoot(buffer,this->fd);
+                    break;
+            }
         }
         else {
             events |= EPOLLERR;
@@ -34,4 +41,10 @@ void ClientHandler::handleEvent(uint32_t events) {
     if (events & ~ EPOLLIN) {
         //TODO: remove, erase from set, close fd, delete this
     }
+}
+
+int ClientHandler::getMessageCode(char *message) {
+    int num1 = message[0] - 48;
+    int num2 = message[1] - 48;
+    return num1*10 + num2;
 }

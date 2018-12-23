@@ -26,6 +26,7 @@ public:
     Server();
     int initSocketConnection();
     int handlePool();
+    void createKahoot(char * data, int owner_fd);
 };
 
 

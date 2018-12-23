@@ -77,4 +77,8 @@ int Server::handlePool() {
     }
 }
 
+void Server::createKahoot(char *data, int owner_fd) {
+
+}
+
 

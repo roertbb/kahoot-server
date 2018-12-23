@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "Handler.h"
+#include "Server.h"
 
 class ClientHandler : public Handler{
     int fd;
@@ -18,6 +19,8 @@ public:
     ClientHandler(int fd, int epoll_fd);
     ~ClientHandler() override;
     void handleEvent(uint32_t events) override;
+    int getMessageCode(char * message);
+
 };
 
 
