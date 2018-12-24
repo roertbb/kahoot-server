@@ -3,7 +3,9 @@
 //
 #include <cerrno>
 #include <error.h>
+#include <sstream>
 #include "Server.h"
+#include "Kahoot.h"
 
 Server::Server() {
     this->initSocketConnection();
@@ -108,5 +110,6 @@ int Server::handleClient(Client *client, char * buffer) {
 }
 
 void Server::createKahoot(char *data, Client * owner) {
-
+    auto * kahoot = new Kahoot(owner, data);
+    this->kahoots.insert(kahoot);
 }

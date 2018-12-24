@@ -17,12 +17,15 @@
 #include <sys/poll.h>
 #include <unordered_set>
 #include "Client.h"
+#include "Kahoot.h"
 
 
 class Server {
     int server_fd;
     struct sockaddr_in server_data;
     std::unordered_set<Client*> clients;
+    std::unordered_set<Kahoot*> kahoots;
+
 public:
     Server();
     int initSocketConnection();
