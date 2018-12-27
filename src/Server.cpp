@@ -1,11 +1,8 @@
 //
 // Created by roertbb on 22.12.18.
 //
-#include <cerrno>
-#include <error.h>
-#include <sstream>
+
 #include "Server.h"
-#include "Kahoot.h"
 
 Server::Server() {
     this->initSocketConnection();
@@ -91,6 +88,14 @@ int Server::handlePoll() {
     }
 }
 
+int Server::writeMessage(Client *client, std::string message) {
+    char * c = const_cast<char*>(message.c_str());
+    if ((write(client->getFd(),c,message.length())) == -1){
+        perror("broadcasting users in room data failed");
+        return 1;
+    }
+}
+
 int Server::getMessageCode(char *buffer) {
     int num1 = buffer[0] - 48;
     int num2 = buffer[1] - 48;
@@ -128,11 +133,7 @@ int Server::sendRooms(Client *client) {
     for (Kahoot * k : this->kahoots) {
         data += std::to_string(k->getId()) + "|";
     }
-    char * c = const_cast<char*>(data.c_str());
-    if ((write(client->getFd(),c,data.length())) == -1){
-        perror("sending rooms data failed");
-        return 1;
-    }
+    this->writeMessage(client,data);
 }
 
 int Server::generateUniqueId() {
@@ -149,56 +150,26 @@ int Server::generateUniqueId() {
 }
 
 int Server::addToRoom(char *buffer, Client *client) {
-    int pipes = 0;
-    int roomid = 0;
-    int pin = 0;
-    int nickbegin = 0;
-    int nickend = 0;
-    for (int i=2; pipes < 4; i++) {
-        if (buffer[i] == '|') {
-            pipes++;
-            if (pipes == 3) {
-                nickbegin = i;
-            }
-            if (pipes == 4) {
-                nickend = i;
-            }
-        }
-        if (pipes == 1 && buffer[i+1] != '|') {
-            roomid = roomid*10 + (buffer[i+1] - '0');
-        }
-        if (pipes == 2 && buffer[i+1] != '|') {
-            pin = pin*10 + (buffer[i+1] - '0');
-        }
-    }
-    std::string usernick = std::string(buffer+nickbegin+1, buffer+nickend);
-    for (Kahoot *k: this->kahoots) {
-        bool send = false;
-        if (k->getId() == roomid) {
-            if (k->getPin() == pin) {
-                char resp[] = "04|success|";
-                client->setNick(usernick);
+    char * ptr = strtok(buffer,"|");
+    // skip 1st value indicating communicate type
+    ptr = strtok(NULL, "|");
+    int roomId = atoi(ptr);
+    ptr = strtok(NULL, "|");
+    int pin = atoi(ptr);
+    ptr = strtok(NULL,"|");
+    std::string nick = std::string(ptr);
+
+    // check if pin is correct
+    for (Kahoot * k : this->kahoots) {
+        if (k->getId() == roomId) {
+            if (k->getPin() == pin){
+                client->setNick(nick);
                 k->addPlayer(client);
-                if ((write(client->getFd(),resp,sizeof(resp))) == -1){
-                    perror("sending join room ack failed");
-                    return 1;
-                }
+                this->writeMessage(client,"04|success|");
                 this->broadcastPlayers(k);
             }
             else {
-                char resp[] = "04|wrong pin|";
-                if ((write(client->getFd(),resp,sizeof(resp))) == -1){
-                    perror("sending join room ack failed");
-                    return 1;
-                }
-            }
-            send = true;
-        }
-        if (!send) {
-            char resp[] = "04|room with such id doesn't exists|";
-            if ((write(client->getFd(),resp,sizeof(resp))) == -1){
-                perror("sending join room ack failed");
-                return 1;
+                this->writeMessage(client,"04|incorrect pin|");
             }
         }
     }
@@ -206,7 +177,7 @@ int Server::addToRoom(char *buffer, Client *client) {
 
 int Server::broadcastPlayers(Kahoot *kahoot) {
     std::string playersInRoom = "05|";
-    for( auto const& [key, val] : kahoot->getPlayers()) {
+    for(auto const& [key, val] : kahoot->getPlayers()) {
         playersInRoom += key->getNick() + "|";
     }
     char * c = const_cast<char*>(playersInRoom.c_str());
@@ -217,7 +188,7 @@ int Server::broadcastPlayers(Kahoot *kahoot) {
         return 1;
     }
     // send message to other players in room
-    for( auto const& [key, val] : kahoot->getPlayers()) {
+    for(auto const& [key, val] : kahoot->getPlayers()) {
         printf("broadcasting to: %d\n", key->getFd());
         if ((write(key->getFd(),c,playersInRoom.length())) == -1){
             perror("broadcasting users in room data failed");
@@ -225,3 +196,4 @@ int Server::broadcastPlayers(Kahoot *kahoot) {
         }
     }
 }
+

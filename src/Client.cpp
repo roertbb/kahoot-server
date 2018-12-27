@@ -4,7 +4,6 @@
 
 #include "Client.h"
 
-
 Client::Client(int fd, int epoll_fd) {
     this->fd = fd;
     this->epoll_fd = epoll_fd;

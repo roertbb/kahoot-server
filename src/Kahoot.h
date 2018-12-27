@@ -8,6 +8,9 @@
 #include "Client.h"
 #include <vector>
 #include <map>
+#include <cstring>
+#include <sstream>
+
 
 class Kahoot {
     bool started;
@@ -15,8 +18,8 @@ class Kahoot {
     int pin;
     Client * owner;
     std::map<Client*,int> players;
-    std::vector<char*> questions;
-    std::vector<char> answers;
+    std::vector<std::string> questions;
+    std::vector<std::string> answers;
     std::vector<int> times;
 public:
     Kahoot(Client * owner, char * question_data, int id);

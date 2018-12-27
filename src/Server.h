@@ -16,6 +16,10 @@
 #include <sys/epoll.h>
 #include <sys/poll.h>
 #include <unordered_set>
+#include <cerrno>
+#include <error.h>
+#include <sstream>
+#include <cstring>
 #include "Client.h"
 #include "Kahoot.h"
 
@@ -36,6 +40,7 @@ public:
     int sendRooms(Client * client);
     int generateUniqueId();
     int addToRoom(char * buffer, Client * client);
+    int writeMessage(Client * client, std::string message);
     int broadcastPlayers(Kahoot * kahoot);
 };
 

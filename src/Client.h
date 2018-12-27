@@ -23,10 +23,6 @@ public:
     int getFd();
     void setNick(std::string nick);
     std::string getNick();
-
-//    void handleEvent(uint32_t events) override;
-//    int getMessageCode(char * message);
-
 };
 
 
