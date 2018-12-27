@@ -9,7 +9,7 @@
 
 Server::Server() {
     this->initSocketConnection();
-    this->handlePool();
+    this->handlePoll();
 }
 
 int Server::initSocketConnection() {
@@ -23,7 +23,7 @@ int Server::initSocketConnection() {
     int n = 1;
     setsockopt(this->server_fd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof(n));
 
-    // set non-blocking modeint handlePool();
+    // set non-blocking modeint handlePoll();
     fcntl(this->server_fd, F_SETFL, O_NONBLOCK);
 
     // TODO: create config file with server data
@@ -46,7 +46,7 @@ int Server::initSocketConnection() {
     printf("Listening for client's connections\n");
 }
 
-int Server::handlePool() {
+int Server::handlePoll() {
     int epoll_fd = epoll_create1(0);
 
     epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
@@ -102,14 +102,45 @@ int Server::handleClient(Client *client, char * buffer) {
     switch(msgcode) {
         case 1:
             printf("user with fd: %d - disconnected\n",client->getFd());
+            this->clients.erase(client);
+            delete client;
             break;
         case 2:
             this->createKahoot(buffer, client);
+            break;
+        case 3:
+            this->sendRooms(client);
             break;
     }
 }
 
 void Server::createKahoot(char *data, Client * owner) {
-    auto * kahoot = new Kahoot(owner, data);
+    auto * kahoot = new Kahoot(owner, data, this->generateUniqueId());
     this->kahoots.insert(kahoot);
+}
+
+int Server::sendRooms(Client *client) {
+    printf("sending rooms data to fd:%d\n", client->getFd());
+    std::string data = "03|";
+    for (Kahoot * k : this->kahoots) {
+        data += std::to_string(k->getId()) + "|";
+    }
+    char * c = const_cast<char*>(data.c_str());
+    if ((write(client->getFd(),c,sizeof(c))) == -1){
+        perror("sending rooms data failed");
+        return 1;
+    }
+}
+
+int Server::generateUniqueId() {
+    int id = rand() % 10000;
+    bool unique = false;
+    while(!unique) {
+        unique = true;
+        for (Kahoot * k : this->kahoots) {
+            if (k->getId() == id)
+                unique = false;
+        }
+    }
+    return id;
 }

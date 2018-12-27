@@ -5,7 +5,9 @@
 #include <cstring>
 #include "Kahoot.h"
 
-Kahoot::Kahoot(Client *owner, char *question_data) {
+Kahoot::Kahoot(Client *owner, char *question_data, int id) {
+    this->started = false;
+    this->id = id;
     this->owner = owner;
     // parse question_data to questions...
     int count_separators = 0;
@@ -35,19 +37,23 @@ Kahoot::Kahoot(Client *owner, char *question_data) {
                 if (pipes == 5) {
                     this->answers.push_back(c[i+1]);
                 }
-                // collect numbers...
-                if (pipes == 6) {
-                    num = num*10 + (c[i+1] - 48);
-                }
-                // ...and save them
+                // ...and save number
                 if (pipes == 7) {
                     this->times.push_back(num);
                     num = 0;
                 }
             }
+            // collect numbers when it's time for it...
+            if (pipes == 6 && c[i+1]!='|') {
+                num = num*10 + (c[i+1] - 48);
+            }
         }
     }
-//    for (int i=0; i<this->questions.size(); i++) {
-//        printf("%s - %c - %d\n",this->questions.at(i), this->answers.at(i), this->times.at(i));
-//    }
+    // generate pin
+    this->pin = rand() % 10000;
 }
+
+int Kahoot::getId() {
+    return this->id;
+}
+
