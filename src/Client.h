@@ -10,14 +10,19 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstdio>
+#include <string>
+
 
 class Client{
     int fd;
     int epoll_fd;
+    std::string nick;
 public:
     Client(int fd, int epoll_fd);
     ~Client();
     int getFd();
+    void setNick(std::string nick);
+    std::string getNick();
 
 //    void handleEvent(uint32_t events) override;
 //    int getMessageCode(char * message);

@@ -51,9 +51,29 @@ Kahoot::Kahoot(Client *owner, char *question_data, int id) {
     }
     // generate pin
     this->pin = rand() % 10000;
+    printf("Created kahoot with id: %d with pin: %d\n", this->id, this->pin);
 }
 
 int Kahoot::getId() {
     return this->id;
 }
+
+int Kahoot::getPin() {
+    return this->pin;
+}
+
+void Kahoot::addPlayer(Client *client) {
+    this->players.insert(std::pair<Client*,int>(client,0));
+}
+
+std::map<Client*, int> Kahoot::getPlayers() {
+    return this->players;
+}
+
+Client *Kahoot::getOwner() {
+    return this->owner;
+}
+
+
+
 
