@@ -21,3 +21,11 @@ Client::~Client() {
 int Client::getFd() {
     return this->fd;
 }
+
+void Client::setNick(std::string nick) {
+    this->nick = nick;
+}
+
+std::string Client::getNick() {
+    return this->nick;
+}

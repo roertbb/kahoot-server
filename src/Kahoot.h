@@ -10,13 +10,21 @@
 #include <map>
 
 class Kahoot {
+    bool started;
+    int id;
+    int pin;
     Client * owner;
-    std::map<Client,int> players;
+    std::map<Client*,int> players;
     std::vector<char*> questions;
     std::vector<char> answers;
     std::vector<int> times;
 public:
-    Kahoot(Client * owner, char * question_data);
+    Kahoot(Client * owner, char * question_data, int id);
+    int getId();
+    int getPin();
+    void addPlayer(Client * client);
+    std::map<Client*,int> getPlayers();
+    Client* getOwner();
 };
 
 

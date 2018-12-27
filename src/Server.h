@@ -29,10 +29,14 @@ class Server {
 public:
     Server();
     int initSocketConnection();
-    int handlePool();
+    int handlePoll();
     int handleClient(Client * client, char * buffer);
     int getMessageCode(char * buffer);
     void createKahoot(char * data, Client * owner);
+    int sendRooms(Client * client);
+    int generateUniqueId();
+    int addToRoom(char * buffer, Client * client);
+    int broadcastPlayers(Kahoot * kahoot);
 };
 
 
