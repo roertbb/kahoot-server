@@ -33,9 +33,10 @@ public:
     std::map<Client*,int> getPlayers();
     Client* getOwner();
     int getTimerFd();
-    void start();
     void next();
     void setTimer();
+    int writeMessage(Client * client, std::string message);
+    void receiveAnswer(Client * client, char * buffer);
 };
 
 

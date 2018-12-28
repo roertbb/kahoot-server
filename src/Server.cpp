@@ -73,7 +73,7 @@ int Server::handlePoll() {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
                 if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
-                    char buffer[1024];
+                    char buffer[1024]="";
                     int count = read(client->getFd(), buffer, 1024);
                     if (count > 0) {
                         this->handleClient(client, buffer);
@@ -102,7 +102,7 @@ int Server::handlePoll() {
 int Server::writeMessage(Client *client, std::string message) {
     char * c = const_cast<char*>(message.c_str());
     if ((write(client->getFd(),c,message.length())) == -1){
-        perror("broadcasting users in room data failed");
+        perror("sending message failed");
         return 1;
     }
 }
@@ -131,7 +131,10 @@ int Server::handleClient(Client *client, char * buffer) {
             this->addToRoom(buffer, client);
             break;
         case 5:
-            this->startKahoot(client);
+            client->getParticipatingIn()->next();
+            break;
+        case 6:
+            client->getParticipatingIn()->receiveAnswer(client,buffer);
             break;
     }
 }
@@ -190,6 +193,7 @@ int Server::addToRoom(char *buffer, Client *client) {
     }
 }
 
+//TODO: move to Kahoot (?)
 int Server::broadcastPlayers(Kahoot *kahoot) {
     std::string playersInRoom = "05|";
     for(auto const& [key, val] : kahoot->getPlayers()) {
@@ -211,9 +215,3 @@ int Server::broadcastPlayers(Kahoot *kahoot) {
         }
     }
 }
-
-int Server::startKahoot(Client *client) {
-    Kahoot * k = client->getParticipatingIn();
-    k->start();
-}
-

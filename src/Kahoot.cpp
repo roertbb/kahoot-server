@@ -11,7 +11,7 @@ Kahoot::Kahoot(Client *owner, char *question_data, int id, int epoll_fd) {
     owner->setParticipatingIn(this);
     this->timer_fd = 0;
     this->epoll_fd = epoll_fd;
-    this->currentQuestion = 1;
+    this->currentQuestion = 0;
     this->state="not-started";
     // parse question_data
     char * ptr = strtok(question_data, "|");
@@ -59,14 +59,12 @@ int Kahoot::getTimerFd() {
     return this->timer_fd;
 }
 
-void Kahoot::start() {
-    // broadcast messages - host
-    // broadcast messages - first question for clients
-    // define timer
-    this->setTimer();
-}
-
 void Kahoot::setTimer() {
+
+    int wait_time = breaktime;
+    if (this->state == "question") {
+        wait_time = this->times[this->currentQuestion];
+    }
     // create timer
     int timer_fd = timerfd_create(CLOCK_REALTIME, 0);
     itimerspec ts {
@@ -75,7 +73,7 @@ void Kahoot::setTimer() {
                     .tv_nsec = 0
             },
             .it_value = {
-                    .tv_sec = breaktime,
+                    .tv_sec = wait_time,
                     .tv_nsec = 0
             }
     };
@@ -88,9 +86,58 @@ void Kahoot::setTimer() {
 }
 
 void Kahoot::next() {
-
+    if (this->state == "not-started") {
+        this->state = "prep-question";
+        this->writeMessage(this->owner, "06|start kahoot");
+        for(auto const& [key, val] : this->getPlayers()) {
+            this->writeMessage(key, "06|");
+        }
+        this->setTimer();
+    } else if (this->state == "prep-question") {
+        this->state = "question";
+        this->writeMessage(this->owner, "07|send question");
+        for(auto const& [key, val] : this->getPlayers()) {
+            this->writeMessage(key, "07|"+this->questions[this->currentQuestion]);
+        }
+        this->setTimer();
+    } else if (this->state == "question") {
+        this->state = "answers";
+        this->writeMessage(this->owner, "08|send answers");
+        for(auto const& [key, val] : this->getPlayers()) {
+            //handle answers
+            this->writeMessage(key, "08|");
+        }
+        this->setTimer();
+    } else if (this->state == "answers") {
+        if (this->currentQuestion == this->questions.size()-1) {
+            // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
+        } else {
+            this->currentQuestion++;
+            this->state = "prep-question";
+            this->writeMessage(this->owner, "09|prepare for next question");
+            for(auto const& [key, val] : this->getPlayers()) {
+                this->writeMessage(key, "09|");
+            }
+            this->setTimer();
+        }
+    }
 }
 
+int Kahoot::writeMessage(Client *client, std::string message) {
+    char * c = const_cast<char*>(message.c_str());
+    if ((write(client->getFd(),c,message.length())) == -1) {
+        perror("sending message failed");
+        return 1;
+    }
+}
+
+void Kahoot::receiveAnswer(Client *client, char *buffer) {
+    printf("%s\n",buffer);
+    char * ptr = strtok(buffer, "|");
+    ptr = strtok(NULL, "|");
+    printf("receiver message - %s # %s\n", ptr, this->answers[this->currentQuestion].c_str());
+    // check if message is correct
+}
 
 
 
