@@ -4,7 +4,6 @@
 
 #include "Client.h"
 
-
 Client::Client(int fd, int epoll_fd) {
     this->fd = fd;
     this->epoll_fd = epoll_fd;
@@ -28,4 +27,12 @@ void Client::setNick(std::string nick) {
 
 std::string Client::getNick() {
     return this->nick;
+}
+
+void Client::setParticipatingIn(Kahoot *kahoot) {
+    this->participatingIn = kahoot;
+}
+
+Kahoot *Client::getParticipatingIn() {
+    return this->participatingIn;
 }

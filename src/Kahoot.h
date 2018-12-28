@@ -5,26 +5,39 @@
 #ifndef KAHOOT_SERVER_KAHOOT_H
 #define KAHOOT_SERVER_KAHOOT_H
 
-#include "Client.h"
 #include <vector>
 #include <map>
+#include <cstring>
+#include <sstream>
+#include "Client.h"
+
+static int breaktime = 5;
 
 class Kahoot {
-    bool started;
     int id;
     int pin;
     Client * owner;
     std::map<Client*,int> players;
-    std::vector<char*> questions;
-    std::vector<char> answers;
+    std::vector<std::string> questions;
+    std::vector<std::string> answers;
     std::vector<int> times;
+    std::map<Client*,int> receivedAnswers;
+    int timer_fd;
+    int epoll_fd;
+    int currentQuestion;
+    std::string state;
 public:
-    Kahoot(Client * owner, char * question_data, int id);
+    Kahoot(Client * owner, char * question_data, int id, int epoll_fd);
     int getId();
     int getPin();
     void addPlayer(Client * client);
     std::map<Client*,int> getPlayers();
     Client* getOwner();
+    int getTimerFd();
+    int next();
+    void setTimer();
+    int writeMessage(Client * client, std::string message);
+    int receiveAnswer(Client * client, char * buffer);
 };
 
 

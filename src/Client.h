@@ -12,21 +12,22 @@
 #include <cstdio>
 #include <string>
 
+// forward declaration
+class Kahoot;
 
 class Client{
     int fd;
     int epoll_fd;
     std::string nick;
+    Kahoot * participatingIn;
 public:
     Client(int fd, int epoll_fd);
     ~Client();
     int getFd();
     void setNick(std::string nick);
     std::string getNick();
-
-//    void handleEvent(uint32_t events) override;
-//    int getMessageCode(char * message);
-
+    void setParticipatingIn(Kahoot * kahoot);
+    Kahoot * getParticipatingIn();
 };
 
 
