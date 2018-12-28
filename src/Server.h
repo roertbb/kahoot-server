@@ -20,16 +20,17 @@
 #include <error.h>
 #include <sstream>
 #include <cstring>
+#include <sys/timerfd.h>
 #include "Client.h"
 #include "Kahoot.h"
 
 
 class Server {
     int server_fd;
+    int epoll_fd;
     struct sockaddr_in server_data;
     std::unordered_set<Client*> clients;
     std::unordered_set<Kahoot*> kahoots;
-
 public:
     Server();
     int initSocketConnection();
@@ -42,6 +43,7 @@ public:
     int addToRoom(char * buffer, Client * client);
     int writeMessage(Client * client, std::string message);
     int broadcastPlayers(Kahoot * kahoot);
+    int startKahoot(Client * client);
 };
 
 

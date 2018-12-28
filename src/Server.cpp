@@ -44,13 +44,13 @@ int Server::initSocketConnection() {
 }
 
 int Server::handlePoll() {
-    int epoll_fd = epoll_create1(0);
+    this->epoll_fd = epoll_create1(0);
 
     epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->server_fd, &ee);
+    epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, this->server_fd, &ee);
 
     while(true) {
-        if ((epoll_wait(epoll_fd, &ee, 1, -1)) == -1) {
+        if ((epoll_wait(this->epoll_fd, &ee, 1, -1)) == -1) {
             perror("Receiving message to epoll failed\n");
             return 1;
         }
@@ -65,7 +65,7 @@ int Server::handlePoll() {
                 return 1;
             }
 
-            this->clients.insert(new Client(client_fd, epoll_fd));
+            this->clients.insert(new Client(client_fd, this->epoll_fd));
 
             printf("new connection from: %s:%hu (fd: %d)\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port), client_fd);
         }
@@ -82,6 +82,17 @@ int Server::handlePoll() {
                 if(ee.events & ~EPOLLIN && ee.data.fd == client->getFd()){
                     this->clients.erase(client);
                     delete client;
+                }
+            }
+            for (Kahoot * kahoot : this->kahoots) {
+                int timerFd = kahoot->getTimerFd();
+                if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
+                    printf("timer with fd: %d\n", timerFd);
+                    // clear timer
+                    epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
+                    close(timerFd);
+                    // call kahoot to make next move
+                    kahoot->next();
                 }
             }
         }
@@ -119,11 +130,14 @@ int Server::handleClient(Client *client, char * buffer) {
         case 4:
             this->addToRoom(buffer, client);
             break;
+        case 5:
+            this->startKahoot(client);
+            break;
     }
 }
 
 void Server::createKahoot(char *data, Client * owner) {
-    auto * kahoot = new Kahoot(owner, data, this->generateUniqueId());
+    Kahoot * kahoot = new Kahoot(owner, data, this->generateUniqueId(), this->epoll_fd);
     this->kahoots.insert(kahoot);
 }
 
@@ -164,6 +178,7 @@ int Server::addToRoom(char *buffer, Client *client) {
         if (k->getId() == roomId) {
             if (k->getPin() == pin){
                 client->setNick(nick);
+                client->setParticipatingIn(k);
                 k->addPlayer(client);
                 this->writeMessage(client,"04|success|");
                 this->broadcastPlayers(k);
@@ -195,5 +210,10 @@ int Server::broadcastPlayers(Kahoot *kahoot) {
             return 1;
         }
     }
+}
+
+int Server::startKahoot(Client *client) {
+    Kahoot * k = client->getParticipatingIn();
+    k->start();
 }
 

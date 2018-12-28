@@ -28,3 +28,11 @@ void Client::setNick(std::string nick) {
 std::string Client::getNick() {
     return this->nick;
 }
+
+void Client::setParticipatingIn(Kahoot *kahoot) {
+    this->participatingIn = kahoot;
+}
+
+Kahoot *Client::getParticipatingIn() {
+    return this->participatingIn;
+}
