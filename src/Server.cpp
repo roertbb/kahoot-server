@@ -92,7 +92,12 @@ int Server::handlePoll() {
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
                     // call kahoot to make next move
-                    kahoot->next();
+                    if ((kahoot->next()) == -1) {
+                        // delete kahoot
+                        this->kahoots.erase(kahoot);
+                        delete kahoot;
+                        break;
+                    }
                 }
             }
         }

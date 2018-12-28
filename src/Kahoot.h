@@ -21,6 +21,7 @@ class Kahoot {
     std::vector<std::string> questions;
     std::vector<std::string> answers;
     std::vector<int> times;
+    std::map<Client*,int> receivedAnswers;
     int timer_fd;
     int epoll_fd;
     int currentQuestion;
@@ -33,10 +34,10 @@ public:
     std::map<Client*,int> getPlayers();
     Client* getOwner();
     int getTimerFd();
-    void next();
+    int next();
     void setTimer();
     int writeMessage(Client * client, std::string message);
-    void receiveAnswer(Client * client, char * buffer);
+    int receiveAnswer(Client * client, char * buffer);
 };
 
 

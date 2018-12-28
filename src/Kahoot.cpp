@@ -85,7 +85,7 @@ void Kahoot::setTimer() {
     this->timer_fd = timer_fd;
 }
 
-void Kahoot::next() {
+int Kahoot::next() {
     if (this->state == "not-started") {
         this->state = "prep-question";
         this->writeMessage(this->owner, "06|start kahoot");
@@ -93,6 +93,7 @@ void Kahoot::next() {
             this->writeMessage(key, "06|");
         }
         this->setTimer();
+        return 0;
     } else if (this->state == "prep-question") {
         this->state = "question";
         this->writeMessage(this->owner, "07|send question");
@@ -100,17 +101,34 @@ void Kahoot::next() {
             this->writeMessage(key, "07|"+this->questions[this->currentQuestion]);
         }
         this->setTimer();
+        return 0;
     } else if (this->state == "question") {
         this->state = "answers";
+        //TODO: if last answer send full fledged results
         this->writeMessage(this->owner, "08|send answers");
         for(auto const& [key, val] : this->getPlayers()) {
-            //handle answers
-            this->writeMessage(key, "08|");
+            int received = this->receivedAnswers[key];
+            std::string answer;
+            if (received == 1)
+                answer = "correct";
+            else if (received == 0)
+                answer = "incorrect";
+            else
+                answer = "answer not found";
+            this->writeMessage(key, "08|" + answer);
         }
+        // clear answers map
+        this->receivedAnswers.clear();
         this->setTimer();
+        return 0;
     } else if (this->state == "answers") {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
+            this->owner->setParticipatingIn(nullptr);
+            for(auto const& [key, val] : this->getPlayers()) {
+                key->setParticipatingIn(nullptr);
+            }
+            return -1;
         } else {
             this->currentQuestion++;
             this->state = "prep-question";
@@ -119,6 +137,7 @@ void Kahoot::next() {
                 this->writeMessage(key, "09|");
             }
             this->setTimer();
+            return 0;
         }
     }
 }
@@ -131,13 +150,23 @@ int Kahoot::writeMessage(Client *client, std::string message) {
     }
 }
 
-void Kahoot::receiveAnswer(Client *client, char *buffer) {
-    printf("%s\n",buffer);
+int Kahoot::receiveAnswer(Client *client, char *buffer) {
     char * ptr = strtok(buffer, "|");
     ptr = strtok(NULL, "|");
-    printf("receiver message - %s # %s\n", ptr, this->answers[this->currentQuestion].c_str());
-    // check if message is correct
+    if (!strcmp(ptr,this->answers[this->currentQuestion].c_str())) {
+        // mark that user answered question correctly
+        this->receivedAnswers.insert(std::pair<Client*,int>(client,1));
+        // calc point according to time
+        itimerspec timer_data;
+        if ((timerfd_gettime(this->timer_fd, &timer_data)) == -1) {
+            perror("reading timer data failed\n");
+            return 1;
+        }
+        int points = 1000 * (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec) / (this->times[this->currentQuestion] * 1000);
+        this->players[client] = this->players[client] + points;
+    }
+    else {
+        // mark that user answered incorrectly
+        this->receivedAnswers.insert(std::pair<Client*,int>(client,0));
+    }
 }
-
-
-
