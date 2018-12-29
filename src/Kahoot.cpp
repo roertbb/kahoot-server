@@ -44,11 +44,8 @@ int Kahoot::getPin() {
 }
 
 void Kahoot::addPlayer(Client *client) {
-    this->players.insert(std::pair<Client*,int>(client,0));
-}
-
-std::map<Client*, int> Kahoot::getPlayers() {
-    return this->players;
+    this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
+    this->connectedPlayers.push_back(client);
 }
 
 Client *Kahoot::getOwner() {
@@ -89,16 +86,16 @@ int Kahoot::next() {
     if (this->state == "not-started") {
         this->state = "prep-question";
         this->writeMessage(this->owner, "06|start kahoot");
-        for(auto const& [key, val] : this->getPlayers()) {
-            this->writeMessage(key, "06|");
+        for(Client * client : this->connectedPlayers) {
+            this->writeMessage(client, "06|");
         }
         this->setTimer();
         return 0;
     } else if (this->state == "prep-question") {
         this->state = "question";
         this->writeMessage(this->owner, "07|send question");
-        for(auto const& [key, val] : this->getPlayers()) {
-            this->writeMessage(key, "07|"+this->questions[this->currentQuestion]);
+        for(Client * client : this->connectedPlayers) {
+            this->writeMessage(client, "07|"+this->questions[this->currentQuestion]);
         }
         this->setTimer();
         return 0;
@@ -106,8 +103,8 @@ int Kahoot::next() {
         this->state = "answers";
         //TODO: if last answer send full fledged results
         this->writeMessage(this->owner, "08|send answers");
-        for(auto const& [key, val] : this->getPlayers()) {
-            int received = this->receivedAnswers[key];
+        for (Client * client : this->connectedPlayers) {
+            int received = this->receivedAnswers[client];
             std::string answer;
             if (received == 1)
                 answer = "correct";
@@ -115,7 +112,7 @@ int Kahoot::next() {
                 answer = "incorrect";
             else
                 answer = "answer not found";
-            this->writeMessage(key, "08|" + answer);
+            this->writeMessage(client, "08|" + answer);
         }
         // clear answers map
         this->receivedAnswers.clear();
@@ -125,16 +122,16 @@ int Kahoot::next() {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
             this->owner->setParticipatingIn(nullptr);
-            for(auto const& [key, val] : this->getPlayers()) {
-                key->setParticipatingIn(nullptr);
+            for (Client * client : this->connectedPlayers) {
+                client->setParticipatingIn(nullptr);
             }
             return -1;
         } else {
             this->currentQuestion++;
             this->state = "prep-question";
             this->writeMessage(this->owner, "09|prepare for next question");
-            for(auto const& [key, val] : this->getPlayers()) {
-                this->writeMessage(key, "09|");
+            for (Client * client : this->connectedPlayers) {
+                this->writeMessage(client, "09|");
             }
             this->setTimer();
             return 0;
@@ -163,7 +160,15 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
             return 1;
         }
         int points = 1000 * (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec) / (this->times[this->currentQuestion] * 1000);
-        this->players[client] = this->players[client] + points;
+        std::string clientNick = client->getNick();
+        for (std::pair<std::string,int> p : this->points) {
+            if (p.first == clientNick) {
+                p.second = p.second + points;
+                printf("%s - %d\n", p.first.c_str(), p.second);
+                break;
+            }
+        }
+        //TODO: sort (?)
     }
     else {
         // mark that user answered incorrectly
@@ -173,11 +178,11 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
 
 void Kahoot::broadcastPlayersInRoom() {
     std::string playersInRoom = "05|";
-    for(auto const& [key, val] : this->getPlayers()) {
-        playersInRoom += key->getNick() + "|";
+    for (Client * client : this->connectedPlayers) {
+        playersInRoom += client->getNick() + "|";
     }
     this->writeMessage(this->owner,playersInRoom);
-    for(auto const& [key, val] : this->getPlayers()) {
-        this->writeMessage(key,playersInRoom);
+    for (Client * client : this->connectedPlayers) {
+        this->writeMessage(client, playersInRoom);
     }
 }
