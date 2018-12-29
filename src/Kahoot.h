@@ -38,6 +38,7 @@ public:
     void setTimer();
     int writeMessage(Client * client, std::string message);
     int receiveAnswer(Client * client, char * buffer);
+    void broadcastPlayersInRoom();
 };
 
 

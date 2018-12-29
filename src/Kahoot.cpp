@@ -170,3 +170,14 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
         this->receivedAnswers.insert(std::pair<Client*,int>(client,0));
     }
 }
+
+void Kahoot::broadcastPlayersInRoom() {
+    std::string playersInRoom = "05|";
+    for(auto const& [key, val] : this->getPlayers()) {
+        playersInRoom += key->getNick() + "|";
+    }
+    this->writeMessage(this->owner,playersInRoom);
+    for(auto const& [key, val] : this->getPlayers()) {
+        this->writeMessage(key,playersInRoom);
+    }
+}
