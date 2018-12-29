@@ -12,10 +12,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fab2e79d-893c-46db-91b8-0223737a0bf7" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Kahoot.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Kahoot.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Kahoot.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/Kahoot.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Server.cpp" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -42,8 +39,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Server.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="113">
-              <caret line="181" selection-start-line="181" selection-end-line="181" />
+            <state relative-caret-position="15">
+              <caret line="19" column="14" selection-start-line="19" selection-start-column="14" selection-end-line="19" selection-end-column="14" />
             </state>
           </provider>
         </entry>
@@ -69,8 +66,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Client.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="435">
-              <caret line="29" column="34" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
+            <state relative-caret-position="450">
+              <caret line="30" selection-start-line="30" selection-end-line="30" />
               <folding>
                 <element signature="e#106#128#0" expanded="true" />
               </folding>
@@ -81,8 +78,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Kahoot.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="349">
-              <caret line="109" column="54" selection-start-line="109" selection-start-column="54" selection-end-line="109" selection-end-column="54" />
+            <state relative-caret-position="364">
+              <caret line="161" column="136" selection-start-line="161" selection-start-column="136" selection-end-line="161" selection-end-column="136" />
               <folding>
                 <element signature="e#42#66#0" expanded="true" />
               </folding>
@@ -93,11 +90,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Kahoot.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="23" column="41" selection-start-line="23" selection-start-column="41" selection-end-line="23" selection-end-column="41" />
-              <folding>
-                <element signature="e#105#122#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="195">
+              <caret line="24" column="27" lean-forward="true" selection-start-line="24" selection-start-column="27" selection-end-line="25" selection-end-column="41" />
             </state>
           </provider>
         </entry>
@@ -129,6 +123,8 @@
       <find>key</find>
       <find>next</find>
       <find>curre</find>
+      <find>broadcastPla</find>
+      <find>getPlayers</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -147,15 +143,15 @@
         <option value="$PROJECT_DIR$/src/Question.h" />
         <option value="$PROJECT_DIR$/main.cpp" />
         <option value="$PROJECT_DIR$/src/Server.h" />
-        <option value="$PROJECT_DIR$/src/Kahoot.h" />
         <option value="$PROJECT_DIR$/src/Client.h" />
         <option value="$PROJECT_DIR$/src/Client.cpp" />
         <option value="$PROJECT_DIR$/src/Server.cpp" />
+        <option value="$PROJECT_DIR$/src/Kahoot.h" />
         <option value="$PROJECT_DIR$/src/Kahoot.cpp" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="67" />
     <option name="y" value="25" />
     <option name="width" value="1853" />
@@ -242,11 +238,13 @@
       <workItem from="1545985148450" duration="1065000" />
       <workItem from="1545990322933" duration="6054000" />
       <workItem from="1546019221284" duration="5904000" />
+      <workItem from="1546037724461" duration="1059000" />
+      <workItem from="1546069997571" duration="609000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="73899000" />
+    <option name="totallyTimeSpent" value="79527000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -261,18 +259,18 @@
     <frame x="67" y="25" width="1853" height="1055" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49919486" visible="true" weight="0.23298284" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49919486" visible="true" weight="0.19424461" />
       <window_info id="Structure" order="1" sideWeight="0.50080514" side_tool="true" weight="0.23021583" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32937366" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32937366" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32937366" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39956802" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32937366" />
       <window_info anchor="bottom" id="Database Changes" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" weight="0.3286638" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.32829374" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.32937366" />
       <window_info anchor="bottom" id="CMake" order="11" weight="0.32937366" />
@@ -334,20 +332,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="1" selection-start-line="7" selection-start-column="1" selection-end-line="7" selection-end-column="1" />
-          <folding>
-            <element signature="e#0#19#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Server.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="113">
-          <caret line="181" selection-start-line="181" selection-end-line="181" />
+        <state relative-caret-position="15">
+          <caret line="19" column="14" selection-start-line="19" selection-start-column="14" selection-end-line="19" selection-end-column="14" />
         </state>
       </provider>
     </entry>
@@ -367,28 +355,35 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Client.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="435">
-          <caret line="29" column="34" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
+        <state relative-caret-position="450">
+          <caret line="30" selection-start-line="30" selection-end-line="30" />
           <folding>
             <element signature="e#106#128#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" column="1" selection-start-line="7" selection-start-column="1" selection-end-line="7" selection-end-column="1" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/Kahoot.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="41" selection-start-line="23" selection-start-column="41" selection-end-line="23" selection-end-column="41" />
-          <folding>
-            <element signature="e#105#122#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="195">
+          <caret line="24" column="27" lean-forward="true" selection-start-line="24" selection-start-column="27" selection-end-line="25" selection-end-column="41" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Kahoot.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="349">
-          <caret line="109" column="54" selection-start-line="109" selection-start-column="54" selection-end-line="109" selection-end-column="54" />
+        <state relative-caret-position="364">
+          <caret line="161" column="136" selection-start-line="161" selection-start-column="136" selection-end-line="161" selection-end-column="136" />
           <folding>
             <element signature="e#42#66#0" expanded="true" />
           </folding>

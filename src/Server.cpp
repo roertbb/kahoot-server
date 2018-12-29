@@ -189,34 +189,11 @@ int Server::addToRoom(char *buffer, Client *client) {
                 client->setParticipatingIn(k);
                 k->addPlayer(client);
                 this->writeMessage(client,"04|success|");
-                this->broadcastPlayers(k);
+                k->broadcastPlayersInRoom();
             }
             else {
                 this->writeMessage(client,"04|incorrect pin|");
             }
-        }
-    }
-}
-
-//TODO: move to Kahoot (?)
-int Server::broadcastPlayers(Kahoot *kahoot) {
-    std::string playersInRoom = "05|";
-    for(auto const& [key, val] : kahoot->getPlayers()) {
-        playersInRoom += key->getNick() + "|";
-    }
-    char * c = const_cast<char*>(playersInRoom.c_str());
-    // send message to channels owner
-    printf("broadcasting to: %d\n", kahoot->getOwner()->getFd());
-    if ((write(kahoot->getOwner()->getFd(),c,playersInRoom.length())) == -1){
-        perror("broadcasting users in room data failed");
-        return 1;
-    }
-    // send message to other players in room
-    for(auto const& [key, val] : kahoot->getPlayers()) {
-        printf("broadcasting to: %d\n", key->getFd());
-        if ((write(key->getFd(),c,playersInRoom.length())) == -1){
-            perror("broadcasting users in room data failed");
-            return 1;
         }
     }
 }
