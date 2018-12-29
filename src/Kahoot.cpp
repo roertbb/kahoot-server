@@ -4,6 +4,7 @@
 
 #include <sys/timerfd.h>
 #include <algorithm>
+#include <iostream>
 #include "Kahoot.h"
 
 Kahoot::Kahoot(Client *owner, char *question_data, int id, int epoll_fd) {
@@ -102,18 +103,26 @@ int Kahoot::next() {
         return 0;
     } else if (this->state == "question") {
         this->state = "answers";
-        //TODO: if last answer send full fledged results
         this->writeMessage(this->owner, "08|send answers");
+        // summarize answers in order to send clients summary of current question
+        std::map<std::string,int> ans;
+        for (auto const& a : this->receivedAnswers) {
+            ans[a.second] = ans[a.second]+1;
+        }
+        std::string answersStr;
+        for (auto const& a : ans) {
+            answersStr += "|" + a.first + ":" + std::to_string(a.second);
+        }
         for (Client * client : this->connectedPlayers) {
-            int received = this->receivedAnswers[client];
+            std::string received = this->receivedAnswers[client];
             std::string answer;
-            if (received == 1)
-                answer = "correct";
-            else if (received == 0)
-                answer = "incorrect";
+            if (received == this->answers[this->currentQuestion])
+                answer = "1";
+            else if (received != this->answers[this->currentQuestion])
+                answer = "0";
             else
-                answer = "answer not found";
-            this->writeMessage(client, "08|" + answer);
+                answer = "2";
+            this->writeMessage(client, "08|" + answer + "|" + this->answers[this->currentQuestion] + answersStr + "|");
         }
         // clear answers map
         this->receivedAnswers.clear();
@@ -153,7 +162,7 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
     ptr = strtok(NULL, "|");
     if (!strcmp(ptr,this->answers[this->currentQuestion].c_str())) {
         // mark that user answered question correctly
-        this->receivedAnswers.insert(std::pair<Client*,int>(client,1));
+        this->receivedAnswers.insert(std::pair<Client*,std::string>(client,ptr));
         // calc point according to time
         itimerspec timer_data;
         if ((timerfd_gettime(this->timer_fd, &timer_data)) == -1) {
@@ -167,9 +176,6 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
                 this->points[i].second = this->points[i].second + points;
             }
         }
-        for (std::pair<std::string,int> p : this->points) {
-            printf("%s - %d\n", p.first.c_str(), p.second);
-        }
         // sort points
         std::sort(this->points.begin(),this->points.end(),[](std::pair<std::string, int> a, std::pair<std::string, int> b) {return a.second > b.second; });
         // send results to owner
@@ -181,7 +187,7 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
     }
     else {
         // mark that user answered incorrectly
-        this->receivedAnswers.insert(std::pair<Client*,int>(client,0));
+        this->receivedAnswers.insert(std::pair<Client*,std::string>(client,ptr));
         this->writeMessage(this->owner,"10|" + std::string(ptr) + "|");
     }
 }

@@ -23,7 +23,7 @@ class Kahoot {
     std::vector<std::string> questions;
     std::vector<std::string> answers;
     std::vector<int> times;
-    std::map<Client*,int> receivedAnswers;
+    std::map<Client*,std::string> receivedAnswers;
     int timer_fd;
     int epoll_fd;
     int currentQuestion;
