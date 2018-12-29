@@ -159,7 +159,7 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
             perror("reading timer data failed\n");
             return 1;
         }
-        int points = 1000 * (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec) / (this->times[this->currentQuestion] * 1000);
+        int points = (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec / 1000000) / (this->times[this->currentQuestion]);
         std::string clientNick = client->getNick();
         for (std::pair<std::string,int> p : this->points) {
             if (p.first == clientNick) {

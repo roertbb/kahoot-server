@@ -13,7 +13,6 @@
   <component name="ChangeListManager">
     <list default="true" id="fab2e79d-893c-46db-91b8-0223737a0bf7" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/src/Kahoot.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Kahoot.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Kahoot.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/Kahoot.h" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -79,8 +78,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Kahoot.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="419">
-              <caret line="183" column="50" selection-start-line="183" selection-start-column="50" selection-end-line="183" selection-end-column="50" />
+            <state relative-caret-position="364">
+              <caret line="161" column="136" selection-start-line="161" selection-start-column="136" selection-end-line="161" selection-end-column="136" />
+              <folding>
+                <element signature="e#42#66#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -242,7 +244,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="77515000" />
+    <option name="totallyTimeSpent" value="79527000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -380,8 +382,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Kahoot.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="419">
-          <caret line="183" column="50" selection-start-line="183" selection-start-column="50" selection-end-line="183" selection-end-column="50" />
+        <state relative-caret-position="364">
+          <caret line="161" column="136" selection-start-line="161" selection-start-column="136" selection-end-line="161" selection-end-column="136" />
+          <folding>
+            <element signature="e#42#66#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
