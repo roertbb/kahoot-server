@@ -3,6 +3,7 @@
 //
 
 #include <sys/timerfd.h>
+#include <algorithm>
 #include "Kahoot.h"
 
 Kahoot::Kahoot(Client *owner, char *question_data, int id, int epoll_fd) {
@@ -161,18 +162,27 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
         }
         int points = (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec / 1000000) / (this->times[this->currentQuestion]);
         std::string clientNick = client->getNick();
-        for (std::pair<std::string,int> p : this->points) {
-            if (p.first == clientNick) {
-                p.second = p.second + points;
-                printf("%s - %d\n", p.first.c_str(), p.second);
-                break;
+        for(int i=0; i<this->points.size(); i++) {
+            if (this->points[i].first == clientNick) {
+                this->points[i].second = this->points[i].second + points;
             }
         }
-        //TODO: sort (?)
+        for (std::pair<std::string,int> p : this->points) {
+            printf("%s - %d\n", p.first.c_str(), p.second);
+        }
+        // sort points
+        std::sort(this->points.begin(),this->points.end(),[](std::pair<std::string, int> a, std::pair<std::string, int> b) {return a.second > b.second; });
+        // send results to owner
+        std::string results_data;
+        for (std::pair<std::string,int> p : this->points) {
+            results_data += "|" + p.first + " - " + std::to_string(p.second);
+        }
+        this->writeMessage(this->owner,"10|" + std::string(ptr) + "|" + results_data + "|");
     }
     else {
         // mark that user answered incorrectly
         this->receivedAnswers.insert(std::pair<Client*,int>(client,0));
+        this->writeMessage(this->owner,"10|" + std::string(ptr) + "|");
     }
 }
 
