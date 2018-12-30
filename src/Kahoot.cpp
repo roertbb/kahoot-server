@@ -158,8 +158,16 @@ int Kahoot::next() {
 }
 
 int Kahoot::writeMessage(Client *client, std::string message) {
-    char * c = const_cast<char*>(message.c_str());
-    if ((write(client->getFd(),c,message.length())) == -1) {
+    std::string msgToSize = std::to_string(message.length());
+    std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
+    std::cout << "size - " << msgSize << std::endl;
+    char * c = const_cast<char*>(msgSize.c_str());
+    if ((write(client->getFd(),c,4)) == -1) {
+        perror("sending message size failed");
+        return 1;
+    }
+    char * c2 = const_cast<char*>(message.c_str());
+    if ((write(client->getFd(),c2,message.length())) == -1) {
         perror("sending message failed");
         return 1;
     }
