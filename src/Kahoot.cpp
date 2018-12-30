@@ -197,6 +197,13 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
     }
 
     this->writeMessage(this->owner,"10|" + client->getNick() + "|" + std::string(ptr) + "|" + std::to_string(answerTime) + usersScore + "|");
+
+    // check if all users answered, if so remove timer and go to next state
+    if (this->receivedAnswers.size() == this->connectedPlayers.size()) {
+        epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,this->timer_fd,NULL);
+        close(this->timer_fd);
+        this->next();
+    }
 }
 
 void Kahoot::broadcastPlayersInRoom() {
