@@ -134,7 +134,13 @@ int Kahoot::next() {
             this->writeMessage(this->owner, "09|0|");
             this->owner->setParticipatingIn(nullptr);
             for (Client * client : this->connectedPlayers) {
-                this->writeMessage(client, "09|0|");
+                // send message to user with score and placement
+                for (int i=0; i<this->points.size(); i++) {
+                    if (this->points[i].first == client->getNick()) {
+                        this->writeMessage(client, "09|0|" + std::to_string(i+1) + "|" +std::to_string(this->points[i].second));
+                        break;
+                    }
+                }
                 client->setParticipatingIn(nullptr);
             }
             return -1;
