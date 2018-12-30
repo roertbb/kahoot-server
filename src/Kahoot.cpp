@@ -225,8 +225,13 @@ void Kahoot::sendPlayersInRoom(Client * client) {
             this->writeMessage(client, playersInRoom);
         }
     }
-    else
+    else {
+        // broadcast players
         this->writeMessage(client,playersInRoom);
+        // check if kahoot already started, if so join it
+        if (this->getState() != "not-started")
+            this->writeMessage(client, "06|");
+    }
 }
 
 float Kahoot::getRemainingTime() {
@@ -236,10 +241,6 @@ float Kahoot::getRemainingTime() {
         return 1;
     }
     return (float) timer_data.it_value.tv_sec + (float) timer_data.it_value.tv_nsec / 1000000000.0;
-}
-
-void Kahoot::setOwner(Client *client) {
-    this->owner = client;
 }
 
 void Kahoot::removePlayer(Client *client) {
@@ -252,7 +253,11 @@ void Kahoot::removePlayer(Client *client) {
 void Kahoot::ownerDisconnected() {
     if (this->state == "not-started") {
         for (Client * client : this->connectedPlayers) {
-            this->writeMessage(client,"11|");
+            this->writeMessage(client,"12|");
         }
     }
+}
+
+std::string Kahoot::getState() {
+    return this->state;
 }

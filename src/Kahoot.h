@@ -34,8 +34,8 @@ public:
     void addPlayer(Client * client);
     void removePlayer(Client * client);
     Client* getOwner();
-    void setOwner(Client * client);
     int getTimerFd();
+    std::string getState();
     int next();
     void setTimer();
     int writeMessage(Client * client, std::string message);

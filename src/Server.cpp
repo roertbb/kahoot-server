@@ -87,10 +87,6 @@ int Server::handlePoll() {
                     }
                     delete(buffer);
                 }
-                if(ee.events & ~EPOLLIN && client != nullptr && ee.data.fd == client->getFd()){
-                    this->clients.erase(client);
-                    delete client;
-                }
             }
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
@@ -215,6 +211,7 @@ int Server::addToRoom(char *buffer, Client *client) {
                 client->setParticipatingIn(k);
                 k->addPlayer(client);
                 this->writeMessage(client,"04|success|");
+                // broadcast message to other users
                 k->sendPlayersInRoom(nullptr);
             }
             else {
