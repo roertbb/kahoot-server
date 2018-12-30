@@ -199,15 +199,20 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
     this->writeMessage(this->owner,"10|" + client->getNick() + "|" + std::string(ptr) + "|" + std::to_string(answerTime) + usersScore + "|");
 }
 
-void Kahoot::broadcastPlayersInRoom() {
+void Kahoot::sendPlayersInRoom(Client * client) {
     std::string playersInRoom = "05|";
     for (Client * client : this->connectedPlayers) {
         playersInRoom += client->getNick() + "|";
     }
-    this->writeMessage(this->owner,playersInRoom);
-    for (Client * client : this->connectedPlayers) {
-        this->writeMessage(client, playersInRoom);
+    // if client is not defined broadcast message to all participating users
+    if (client == nullptr) {
+        this->writeMessage(this->owner,playersInRoom);
+        for (Client * client : this->connectedPlayers) {
+            this->writeMessage(client, playersInRoom);
+        }
     }
+    else
+        this->writeMessage(client,playersInRoom);
 }
 
 float Kahoot::getRemainingTime() {

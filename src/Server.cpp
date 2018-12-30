@@ -140,6 +140,8 @@ int Server::handleClient(Client *client, char * buffer) {
             break;
         case 6:
             client->getParticipatingIn()->receiveAnswer(client,buffer);
+        case 11:
+            client->getParticipatingIn()->sendPlayersInRoom(client);
             break;
     }
 }
@@ -147,15 +149,23 @@ int Server::handleClient(Client *client, char * buffer) {
 void Server::createKahoot(char *data, Client * owner) {
     Kahoot * kahoot = new Kahoot(owner, data, this->generateUniqueId(), this->epoll_fd);
     this->kahoots.insert(kahoot);
+    // notify all users that new kahoot was created
+    this->sendRooms(nullptr);
 }
 
-int Server::sendRooms(Client *client) {
-    printf("sending rooms data to fd:%d\n", client->getFd());
+int Server::sendRooms(Client * client) {
     std::string data = "03|";
     for (Kahoot * k : this->kahoots) {
         data += std::to_string(k->getId()) + "|";
     }
-    this->writeMessage(client,data);
+    // if client is not defined broadcast message to all users
+    if (client == nullptr) {
+        for (Client * c : this->clients) {
+            this->writeMessage(c,data);
+        }
+    }
+    else
+        this->writeMessage(client,data);
 }
 
 int Server::generateUniqueId() {
@@ -189,7 +199,7 @@ int Server::addToRoom(char *buffer, Client *client) {
                 client->setParticipatingIn(k);
                 k->addPlayer(client);
                 this->writeMessage(client,"04|success|");
-                k->broadcastPlayersInRoom();
+                k->sendPlayersInRoom(nullptr);
             }
             else {
                 this->writeMessage(client,"04|incorrect pin|");
