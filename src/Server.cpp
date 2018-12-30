@@ -73,7 +73,7 @@ int Server::handlePoll() {
         else {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
-                if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
+                if (ee.events & EPOLLIN && client != nullptr && ee.data.fd == client->getFd()) {
                     // receive "pilot" indicating size of buffer
                     char msgSize[4];
                     if((read(client->getFd(),msgSize,4)) == -1) {
@@ -87,7 +87,7 @@ int Server::handlePoll() {
                     }
                     delete(buffer);
                 }
-                if(ee.events & ~EPOLLIN && ee.data.fd == client->getFd()){
+                if(ee.events & ~EPOLLIN && client != nullptr && ee.data.fd == client->getFd()){
                     this->clients.erase(client);
                     delete client;
                 }
@@ -95,7 +95,7 @@ int Server::handlePoll() {
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
-                    printf("timer with fd: %d\n", timerFd);
+                    //printf("timer with fd: %d\n", timerFd);
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
@@ -115,7 +115,6 @@ int Server::handlePoll() {
 int Server::writeMessage(Client *client, std::string message) {
     std::string msgToSize = std::to_string(message.length());
     std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
-    std::cout << "size (server) - " << message << " " << msgToSize << " " << msgSize << std::endl;
     char * c = const_cast<char*>(msgSize.c_str());
     if ((write(client->getFd(),c,4)) == -1) {
         perror("sending message size failed");

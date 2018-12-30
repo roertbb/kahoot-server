@@ -3,6 +3,7 @@
 //
 
 #include "Client.h"
+#include "Kahoot.h"
 
 Client::Client(int fd, int epoll_fd) {
     this->fd = fd;
@@ -12,6 +13,13 @@ Client::Client(int fd, int epoll_fd) {
 }
 
 Client::~Client() {
+    Kahoot * myKahoot = this->participatingIn;
+    if (myKahoot != nullptr) {
+        if (myKahoot->getOwner() == this)
+            myKahoot->ownerDisconnected();
+        else
+            myKahoot->removePlayer(this);
+    }
     epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
     shutdown(this->fd, SHUT_RDWR);
     close(this->fd);

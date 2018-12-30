@@ -32,7 +32,9 @@ public:
     int getId();
     int getPin();
     void addPlayer(Client * client);
+    void removePlayer(Client * client);
     Client* getOwner();
+    void setOwner(Client * client);
     int getTimerFd();
     int next();
     void setTimer();
@@ -40,6 +42,7 @@ public:
     int receiveAnswer(Client * client, char * buffer);
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();
+    void ownerDisconnected();
 };
 
 

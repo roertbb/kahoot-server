@@ -160,7 +160,6 @@ int Kahoot::next() {
 int Kahoot::writeMessage(Client *client, std::string message) {
     std::string msgToSize = std::to_string(message.length());
     std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
-    std::cout << "size - " << msgSize << std::endl;
     char * c = const_cast<char*>(msgSize.c_str());
     if ((write(client->getFd(),c,4)) == -1) {
         perror("sending message size failed");
@@ -237,4 +236,23 @@ float Kahoot::getRemainingTime() {
         return 1;
     }
     return (float) timer_data.it_value.tv_sec + (float) timer_data.it_value.tv_nsec / 1000000000.0;
+}
+
+void Kahoot::setOwner(Client *client) {
+    this->owner = client;
+}
+
+void Kahoot::removePlayer(Client *client) {
+    for (int i=0; i<this->connectedPlayers.size(); i++) {
+        if (this->connectedPlayers[i] == client)
+            this->connectedPlayers.erase(this->connectedPlayers.begin()+i);
+    }
+}
+
+void Kahoot::ownerDisconnected() {
+    if (this->state == "not-started") {
+        for (Client * client : this->connectedPlayers) {
+            this->writeMessage(client,"11|");
+        }
+    }
 }
