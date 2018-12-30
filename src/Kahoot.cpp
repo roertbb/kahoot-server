@@ -131,15 +131,17 @@ int Kahoot::next() {
     } else if (this->state == "answers") {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
+            this->writeMessage(this->owner, "09|0|");
             this->owner->setParticipatingIn(nullptr);
             for (Client * client : this->connectedPlayers) {
+                this->writeMessage(client, "09|0|");
                 client->setParticipatingIn(nullptr);
             }
             return -1;
         } else {
             this->currentQuestion++;
             this->state = "prep-question";
-            this->writeMessage(this->owner, "09|prepare for next question");
+            this->writeMessage(this->owner, "09|");
             for (Client * client : this->connectedPlayers) {
                 this->writeMessage(client, "09|");
             }
@@ -158,38 +160,37 @@ int Kahoot::writeMessage(Client *client, std::string message) {
 }
 
 int Kahoot::receiveAnswer(Client *client, char *buffer) {
+    //TODO: skip msgcode when receiving message;
     char * ptr = strtok(buffer, "|");
     ptr = strtok(NULL, "|");
-    if (!strcmp(ptr,this->answers[this->currentQuestion].c_str())) {
-        // mark that user answered question correctly
-        this->receivedAnswers.insert(std::pair<Client*,std::string>(client,ptr));
-        // calc point according to time
-        itimerspec timer_data;
-        if ((timerfd_gettime(this->timer_fd, &timer_data)) == -1) {
-            perror("reading timer data failed\n");
-            return 1;
-        }
-        int points = (timer_data.it_value.tv_sec * 1000 + timer_data.it_value.tv_nsec / 1000000) / (this->times[this->currentQuestion]);
-        std::string clientNick = client->getNick();
+
+    bool isAnswerCorrect = !strcmp(ptr,this->answers[this->currentQuestion].c_str());
+    // if user respond correctly we will construct string with current users score
+    std::string usersScore = "";
+    // save user answer
+    this->receivedAnswers.insert(std::pair<Client*,std::string>(client,ptr));
+    // calculate time
+    float remainingTime = this->getRemainingTime();
+    float answerTime = (float) this->times[this->currentQuestion] - remainingTime;
+
+    if (isAnswerCorrect) {
+        // calculate points
+        int points = (int) (1000.0 * remainingTime / (float) this->times[this->currentQuestion]);
+        // assign value to user
         for(int i=0; i<this->points.size(); i++) {
-            if (this->points[i].first == clientNick) {
+            if (this->points[i].first == client->getNick()) {
                 this->points[i].second = this->points[i].second + points;
             }
         }
         // sort points
         std::sort(this->points.begin(),this->points.end(),[](std::pair<std::string, int> a, std::pair<std::string, int> b) {return a.second > b.second; });
-        // send results to owner
-        std::string results_data;
+        // prepare user score
         for (std::pair<std::string,int> p : this->points) {
-            results_data += "|" + p.first + " - " + std::to_string(p.second);
+            usersScore += "|" + p.first + " - " + std::to_string(p.second);
         }
-        this->writeMessage(this->owner,"10|" + std::string(ptr) + "|" + results_data + "|");
     }
-    else {
-        // mark that user answered incorrectly
-        this->receivedAnswers.insert(std::pair<Client*,std::string>(client,ptr));
-        this->writeMessage(this->owner,"10|" + std::string(ptr) + "|");
-    }
+
+    this->writeMessage(this->owner,"10|" + client->getNick() + "|" + std::string(ptr) + "|" + std::to_string(answerTime) + usersScore + "|");
 }
 
 void Kahoot::broadcastPlayersInRoom() {
@@ -201,4 +202,13 @@ void Kahoot::broadcastPlayersInRoom() {
     for (Client * client : this->connectedPlayers) {
         this->writeMessage(client, playersInRoom);
     }
+}
+
+float Kahoot::getRemainingTime() {
+    itimerspec timer_data;
+    if ((timerfd_gettime(this->timer_fd, &timer_data)) == -1) {
+        perror("reading timer data failed\n");
+        return 1;
+    }
+    return (float) timer_data.it_value.tv_sec + (float) timer_data.it_value.tv_nsec / 1000000000.0;
 }
