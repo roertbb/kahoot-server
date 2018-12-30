@@ -42,7 +42,6 @@ public:
     int generateUniqueId();
     int addToRoom(char * buffer, Client * client);
     int writeMessage(Client * client, std::string message);
-    int broadcastPlayers(Kahoot * kahoot);
 };
 
 

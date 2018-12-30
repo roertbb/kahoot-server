@@ -2,6 +2,7 @@
 // Created by roertbb on 22.12.18.
 //
 
+#include <iostream>
 #include "Server.h"
 
 Server::Server() {
@@ -72,22 +73,25 @@ int Server::handlePoll() {
         else {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
-                if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
-                    char buffer[1024]="";
-                    int count = read(client->getFd(), buffer, 1024);
+                if (ee.events & EPOLLIN && client != nullptr && ee.data.fd == client->getFd()) {
+                    // receive "pilot" indicating size of buffer
+                    char msgSize[4];
+                    if((read(client->getFd(),msgSize,4)) == -1) {
+                        perror("Reading message size failed\n");
+                        return 1;
+                    }
+                    char * buffer = new char[atoi(msgSize)];
+                    int count = read(client->getFd(), buffer, atoi(msgSize));
                     if (count > 0) {
                         this->handleClient(client, buffer);
                     }
-                }
-                if(ee.events & ~EPOLLIN && ee.data.fd == client->getFd()){
-                    this->clients.erase(client);
-                    delete client;
+                    delete(buffer);
                 }
             }
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
-                    printf("timer with fd: %d\n", timerFd);
+                    //printf("timer with fd: %d\n", timerFd);
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
@@ -105,8 +109,15 @@ int Server::handlePoll() {
 }
 
 int Server::writeMessage(Client *client, std::string message) {
-    char * c = const_cast<char*>(message.c_str());
-    if ((write(client->getFd(),c,message.length())) == -1){
+    std::string msgToSize = std::to_string(message.length());
+    std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
+    char * c = const_cast<char*>(msgSize.c_str());
+    if ((write(client->getFd(),c,4)) == -1) {
+        perror("sending message size failed");
+        return 1;
+    }
+    char * c2 = const_cast<char*>(message.c_str());
+    if ((write(client->getFd(),c2,message.length())) == -1) {
         perror("sending message failed");
         return 1;
     }
@@ -140,6 +151,7 @@ int Server::handleClient(Client *client, char * buffer) {
             break;
         case 6:
             client->getParticipatingIn()->receiveAnswer(client,buffer);
+            break;
         case 11:
             client->getParticipatingIn()->sendPlayersInRoom(client);
             break;
@@ -199,6 +211,7 @@ int Server::addToRoom(char *buffer, Client *client) {
                 client->setParticipatingIn(k);
                 k->addPlayer(client);
                 this->writeMessage(client,"04|success|");
+                // broadcast message to other users
                 k->sendPlayersInRoom(nullptr);
             }
             else {

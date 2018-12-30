@@ -32,14 +32,17 @@ public:
     int getId();
     int getPin();
     void addPlayer(Client * client);
+    void removePlayer(Client * client);
     Client* getOwner();
     int getTimerFd();
+    std::string getState();
     int next();
     void setTimer();
     int writeMessage(Client * client, std::string message);
     int receiveAnswer(Client * client, char * buffer);
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();
+    void ownerDisconnected();
 };
 
 
