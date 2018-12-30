@@ -140,6 +140,7 @@ int Server::handleClient(Client *client, char * buffer) {
             break;
         case 6:
             client->getParticipatingIn()->receiveAnswer(client,buffer);
+            break;
         case 11:
             client->getParticipatingIn()->sendPlayersInRoom(client);
             break;

@@ -103,7 +103,7 @@ int Kahoot::next() {
         return 0;
     } else if (this->state == "question") {
         this->state = "answers";
-        this->writeMessage(this->owner, "08|send answers");
+        this->writeMessage(this->owner, "08|");
         // summarize answers in order to send clients summary of current question
         std::map<std::string,int> ans;
         for (auto const& a : this->receivedAnswers) {
