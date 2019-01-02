@@ -73,32 +73,33 @@ int Server::handlePoll() {
         else {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
-                if (ee.events & EPOLLIN && client != nullptr && ee.data.fd == client->getFd()) {
-                    // receive "pilot" indicating size of buffer
-                    char msgSize[4];
-                    if((read(client->getFd(),msgSize,4)) == -1) {
-                        perror("Reading message size failed\n");
-                        return 1;
+                if (this->clients.find(client) != this->clients.end()) {
+                    if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
+                        // receive "pilot" indicating size of buffer
+                        char msgSize[4];
+                        if((read(client->getFd(),msgSize,4)) == -1) {
+                            perror("Reading message size failed\n");
+                            return 1;
+                        }
+                        char * buffer = new char[atoi(msgSize)];
+                        int count = read(client->getFd(), buffer, atoi(msgSize));
+                        if (count > 0) {
+                            this->handleClient(client, buffer);
+                        }
+                        delete[](buffer);
                     }
-                    char * buffer = new char[atoi(msgSize)];
-                    int count = read(client->getFd(), buffer, atoi(msgSize));
-                    if (count > 0) {
-                        this->handleClient(client, buffer);
-                    }
-                    delete(buffer);
                 }
             }
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
-                    //printf("timer with fd: %d\n", timerFd);
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
                     // call kahoot to make next move
                     if ((kahoot->next()) == -1) {
                         // delete kahoot
-                        this->kahoots.erase(kahoot);
+                        this->kahoots.erase(this->kahoots.find(kahoot));
                         delete kahoot;
                         break;
                     }
@@ -134,7 +135,7 @@ int Server::handleClient(Client *client, char * buffer) {
     switch(msgcode) {
         case 1:
             printf("user with fd: %d - disconnected\n",client->getFd());
-            this->clients.erase(client);
+            this->clients.erase(this->clients.find(client));
             delete client;
             break;
         case 2:
@@ -207,12 +208,24 @@ int Server::addToRoom(char *buffer, Client *client) {
     for (Kahoot * k : this->kahoots) {
         if (k->getId() == roomId) {
             if (k->getPin() == pin){
-                client->setNick(nick);
-                client->setParticipatingIn(k);
-                k->addPlayer(client);
-                this->writeMessage(client,"04|success|");
-                // broadcast message to other users
-                k->sendPlayersInRoom(nullptr);
+                // check if nick is unique
+                bool isNickUnique = true;
+                for (Client * client : this->clients) {
+                    if (client->getNick() == nick) {
+                        isNickUnique = false;
+                        break;
+                    }
+                }
+                if (isNickUnique) {
+                    client->setNick(nick);
+                    client->setParticipatingIn(k);
+                    k->addPlayer(client);
+                    this->writeMessage(client,"04|success|");
+                    // broadcast message to other users
+                    k->sendPlayersInRoom(nullptr);
+                } else {
+                    this->writeMessage(client,"04|nick is not unique|");
+                }
             }
             else {
                 this->writeMessage(client,"04|incorrect pin|");
