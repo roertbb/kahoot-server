@@ -156,6 +156,8 @@ int Server::handleClient(Client *client, char * buffer) {
         case 11:
             client->getParticipatingIn()->sendPlayersInRoom(client);
             break;
+        case 13:
+            client->getParticipatingIn()->checkIfAlreadyStarted(client);
     }
 }
 
@@ -209,14 +211,7 @@ int Server::addToRoom(char *buffer, Client *client) {
         if (k->getId() == roomId) {
             if (k->getPin() == pin){
                 // check if nick is unique
-                bool isNickUnique = true;
-                for (Client * client : this->clients) {
-                    if (client->getNick() == nick) {
-                        isNickUnique = false;
-                        break;
-                    }
-                }
-                if (isNickUnique) {
+                if (!k->isUserAlreadyInRoom(client->getNick())) {
                     client->setNick(nick);
                     client->setParticipatingIn(k);
                     k->addPlayer(client);

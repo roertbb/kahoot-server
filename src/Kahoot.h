@@ -36,6 +36,7 @@ public:
     Client* getOwner();
     int getTimerFd();
     std::string getState();
+    bool isUserAlreadyInRoom(std::string nick);
     int next();
     void setTimer();
     int writeMessage(Client * client, std::string message);
@@ -43,6 +44,7 @@ public:
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();
     void ownerDisconnected();
+    void checkIfAlreadyStarted(Client * client);
 };
 
 

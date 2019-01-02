@@ -274,3 +274,17 @@ void Kahoot::ownerDisconnected() {
 std::string Kahoot::getState() {
     return this->state;
 }
+
+void Kahoot::checkIfAlreadyStarted(Client *client) {
+    if (this->state == "question") {
+        this->writeMessage(client, "07|"+this->questions[this->currentQuestion]);
+    }
+}
+
+bool Kahoot::isUserAlreadyInRoom(std::string nick) {
+    for (Client * client : this->connectedPlayers) {
+        if (client->getNick() == nick)
+            return true;
+    }
+    return false;
+}
