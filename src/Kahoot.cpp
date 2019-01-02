@@ -46,7 +46,16 @@ int Kahoot::getPin() {
 }
 
 void Kahoot::addPlayer(Client *client) {
-    this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
+    // check if nick already in points map
+    bool inPoints = false;
+    for (std::pair<std::string,int> p : this->points) {
+        if (p.first == client->getNick()) {
+            inPoints = true;
+            break;
+        }
+    }
+    if (!inPoints)
+        this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
     this->connectedPlayers.push_back(client);
 }
 
@@ -114,14 +123,18 @@ int Kahoot::next() {
             answersStr += "|" + a.first + ":" + std::to_string(a.second);
         }
         for (Client * client : this->connectedPlayers) {
-            std::string received = this->receivedAnswers[client];
             std::string answer;
-            if (received == this->answers[this->currentQuestion])
-                answer = "1";
-            else if (received != this->answers[this->currentQuestion])
-                answer = "0";
-            else
+            if (this->receivedAnswers.find(client) == this->receivedAnswers.end()) {
+                // answer not found
                 answer = "2";
+            } else {
+                // answer found
+                std::string received = this->receivedAnswers[client];
+                if (received == this->answers[this->currentQuestion])
+                    answer = "1";
+                else if (received != this->answers[this->currentQuestion])
+                    answer = "0";
+            }
             this->writeMessage(client, "08|" + answer + "|" + this->answers[this->currentQuestion] + answersStr + "|");
         }
         // clear answers map
