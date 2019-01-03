@@ -42,6 +42,7 @@ public:
     int generateUniqueId();
     int addToRoom(char * buffer, Client * client);
     int writeMessage(Client * client, std::string message);
+    std::vector<std::string> readConfig();
 };
 
 
