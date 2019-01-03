@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include "Server.h"
 
 Server::Server() {
@@ -11,6 +12,17 @@ Server::Server() {
 }
 
 int Server::initSocketConnection() {
+    //read config data
+    std::ifstream configFile;
+    configFile.open(".env");
+    std::string serverAddress, serverPort;
+    if (!configFile.is_open()) {
+        perror("Error reading config from file");
+        return 1;
+    }
+    configFile >> serverAddress;
+    configFile >> serverPort;
+    configFile.close();
 
     this->server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->server_fd < 0) {
@@ -24,11 +36,10 @@ int Server::initSocketConnection() {
     // set non-blocking mode
     fcntl(this->server_fd, F_SETFL, O_NONBLOCK);
 
-    // TODO: create config file with server data
     sockaddr_in server_data {
-        .sin_family = AF_INET,
-        .sin_port = htons(1234),
-        .sin_addr = {inet_addr("127.0.0.1")}
+            .sin_family = AF_INET,
+            .sin_port = htons(std::stoi(serverPort)),
+            .sin_addr = {inet_addr(serverAddress.c_str())}
     };
 
     if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0) {
