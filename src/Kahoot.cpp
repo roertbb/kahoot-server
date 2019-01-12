@@ -2,9 +2,6 @@
 // Created by roertbb on 23.12.18.
 //
 
-#include <sys/timerfd.h>
-#include <algorithm>
-#include <iostream>
 #include "Kahoot.h"
 
 Kahoot::Kahoot(Client *owner, char *question_data, int id, int epoll_fd) {
@@ -14,21 +11,26 @@ Kahoot::Kahoot(Client *owner, char *question_data, int id, int epoll_fd) {
     this->timer_fd = 0;
     this->epoll_fd = epoll_fd;
     this->currentQuestion = 0;
-    this->state="not-started";
+    this->state=stateNotStarted;
     // parse question_data
     char * ptr = strtok(question_data, "|");
     // skip 1st value indicating communicate type
     while((ptr = strtok(NULL, "|")) != NULL) {
-        this->questions.push_back(std::string(ptr));
-    }
-    // iterate over questions in order to obtain answers and time
-    for (std::string question : this->questions) {
+        std::string line = std::string(ptr);
+        std::string question = "";
+
         std::string token;
-        std::istringstream questionStream(question);
+        std::istringstream questionStream(line);
         for (int i=0; std::getline(questionStream, token, '#'); i++) {
-            if (i==5)
+            if (i < 4)
+                question += token + "#";
+            else if (i==4) {
+                question += token;
+                this->questions.push_back(question);
+            }
+            else if (i==5)
                 this->answers.push_back(token);
-            if (i==6)
+            else if (i==6)
                 this->times.push_back(std::stoi(token));
         }
     }
@@ -56,7 +58,7 @@ void Kahoot::addPlayer(Client *client) {
     }
     if (!inPoints)
         this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
-    this->connectedPlayers.push_back(client);
+    this->connectedPlayers.insert(client);
 }
 
 Client *Kahoot::getOwner() {
@@ -70,7 +72,7 @@ int Kahoot::getTimerFd() {
 void Kahoot::setTimer() {
 
     int wait_time = breaktime;
-    if (this->state == "question") {
+    if (this->state == stateQuestion) {
         wait_time = this->times[this->currentQuestion];
     }
     // create timer
@@ -94,25 +96,25 @@ void Kahoot::setTimer() {
 }
 
 int Kahoot::next() {
-    if (this->state == "not-started") {
-        this->state = "prep-question";
-        this->writeMessage(this->owner, "06|start kahoot");
+    if (this->state == stateNotStarted) {
+        this->state = statePrepQuestion;
+        this->owner->writeMessage(START_KAHOOT,"start kahoot");
         for(Client * client : this->connectedPlayers) {
-            this->writeMessage(client, "06|");
+            client->writeMessage(START_KAHOOT,"");
         }
         this->setTimer();
         return 0;
-    } else if (this->state == "prep-question") {
-        this->state = "question";
-        this->writeMessage(this->owner, "07|send question");
+    } else if (this->state == statePrepQuestion) {
+        this->state = stateQuestion;
+        this->writeMessageToOwner(SEND_QUESTION,"send question");
         for(Client * client : this->connectedPlayers) {
-            this->writeMessage(client, "07|"+this->questions[this->currentQuestion]);
+            client->writeMessage(SEND_QUESTION,this->questions[this->currentQuestion]);
         }
         this->setTimer();
         return 0;
-    } else if (this->state == "question") {
-        this->state = "answers";
-        this->writeMessage(this->owner, "08|");
+    } else if (this->state == stateQuestion) {
+        this->state = stateAnswers;
+        this->writeMessageToOwner(SEND_ANSWER_CORRECT,"");
         // summarize answers in order to send clients summary of current question
         std::map<std::string,int> ans;
         for (auto const& a : this->receivedAnswers) {
@@ -135,22 +137,21 @@ int Kahoot::next() {
                 else if (received != this->answers[this->currentQuestion])
                     answer = "0";
             }
-            this->writeMessage(client, "08|" + answer + "|" + this->answers[this->currentQuestion] + answersStr + "|");
+            client->writeMessage(SEND_ANSWER_CORRECT,answer + "|" + this->answers[this->currentQuestion] + answersStr + "|");
         }
         // clear answers map
         this->receivedAnswers.clear();
         this->setTimer();
         return 0;
-    } else if (this->state == "answers") {
+    } else if (this->state == stateAnswers) {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
-            this->writeMessage(this->owner, "09|0|");
-            this->owner->setParticipatingIn(nullptr);
+            this->writeMessageToOwner(SEND_PREPARE_BEFORE_NEXT,"0|");
             for (Client * client : this->connectedPlayers) {
                 // send message to user with score and placement
                 for (int i=0; i<this->points.size(); i++) {
                     if (this->points[i].first == client->getNick()) {
-                        this->writeMessage(client, "09|0|" + std::to_string(i+1) + "|" +std::to_string(this->points[i].second));
+                        client->writeMessage(SEND_PREPARE_BEFORE_NEXT,"0|" + std::to_string(i+1) + "|" +std::to_string(this->points[i].second));
                         break;
                     }
                 }
@@ -159,29 +160,14 @@ int Kahoot::next() {
             return -1;
         } else {
             this->currentQuestion++;
-            this->state = "prep-question";
-            this->writeMessage(this->owner, "09|");
+            this->state = statePrepQuestion;
+            this->writeMessageToOwner(SEND_PREPARE_BEFORE_NEXT,"");
             for (Client * client : this->connectedPlayers) {
-                this->writeMessage(client, "09|");
+                client->writeMessage(SEND_PREPARE_BEFORE_NEXT,"");
             }
             this->setTimer();
             return 0;
         }
-    }
-}
-
-int Kahoot::writeMessage(Client *client, std::string message) {
-    std::string msgToSize = std::to_string(message.length());
-    std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
-    char * c = const_cast<char*>(msgSize.c_str());
-    if ((write(client->getFd(),c,4)) == -1) {
-        perror("sending message size failed");
-        return 1;
-    }
-    char * c2 = const_cast<char*>(message.c_str());
-    if ((write(client->getFd(),c2,message.length())) == -1) {
-        perror("sending message failed");
-        return 1;
     }
 }
 
@@ -216,7 +202,7 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
         }
     }
 
-    this->writeMessage(this->owner,"10|" + client->getNick() + "|" + std::string(ptr) + "|" + std::to_string(answerTime) + usersScore + "|");
+    this->writeMessageToOwner(SEND_ANSWER_TO_HOST,"" + client->getNick() + "|" + std::string(ptr) + "|" + std::to_string(answerTime) + usersScore + "|");
 
     // check if all users answered, if so remove timer and go to next state
     if (this->receivedAnswers.size() == this->connectedPlayers.size()) {
@@ -227,23 +213,23 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
 }
 
 void Kahoot::sendPlayersInRoom(Client * client) {
-    std::string playersInRoom = "05|";
+    std::string playersInRoom = "";
     for (Client * client : this->connectedPlayers) {
         playersInRoom += client->getNick() + "|";
     }
     // if client is not defined broadcast message to all participating users
     if (client == nullptr) {
-        this->writeMessage(this->owner,playersInRoom);
+        this->writeMessageToOwner(SEND_PLAYERS_IN_ROOM,playersInRoom);
         for (Client * client : this->connectedPlayers) {
-            this->writeMessage(client, playersInRoom);
+            client->writeMessage(SEND_PLAYERS_IN_ROOM,playersInRoom);
         }
     }
     else {
         // broadcast players
-        this->writeMessage(client,playersInRoom);
+        client->writeMessage(SEND_PLAYERS_IN_ROOM,playersInRoom);
         // check if kahoot already started, if so join it
-        if (this->getState() != "not-started")
-            this->writeMessage(client, "06|");
+        if (this->state != stateNotStarted)
+            client->writeMessage(START_KAHOOT,"");
     }
 }
 
@@ -257,27 +243,29 @@ float Kahoot::getRemainingTime() {
 }
 
 void Kahoot::removePlayer(Client *client) {
-    for (int i=0; i<this->connectedPlayers.size(); i++) {
-        if (this->connectedPlayers[i] == client)
-            this->connectedPlayers.erase(this->connectedPlayers.begin()+i);
+    for (auto it = this->connectedPlayers.begin(); it != this->connectedPlayers.end();) {
+        if(*it == client)
+            it = this->connectedPlayers.erase(it);
+        else
+            ++it;
     }
 }
 
 void Kahoot::ownerDisconnected() {
-    if (this->state == "not-started") {
-        for (Client * client : this->connectedPlayers) {
-            this->writeMessage(client,"12|");
+    if (this->state == stateNotStarted) {
+        for (auto client : this->connectedPlayers) {
+            client->writeMessage(SEND_OWNER_DISCONNECTED,"");
         }
     }
 }
 
-std::string Kahoot::getState() {
+int Kahoot::getState() {
     return this->state;
 }
 
 void Kahoot::checkIfAlreadyStarted(Client *client) {
-    if (this->state == "question") {
-        this->writeMessage(client, "07|"+this->questions[this->currentQuestion]);
+    if (this->state == stateQuestion) {
+        client->writeMessage(SEND_QUESTION,this->questions[this->currentQuestion]);
     }
 }
 
@@ -287,4 +275,9 @@ bool Kahoot::isUserAlreadyInRoom(std::string nick) {
             return true;
     }
     return false;
+}
+
+void Kahoot::writeMessageToOwner(int type, std::string message) {
+    if (this->owner != nullptr)
+        this->owner->writeMessage(type,message);
 }

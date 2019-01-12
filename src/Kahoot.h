@@ -7,17 +7,29 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <cstring>
 #include <sstream>
+#include <sys/timerfd.h>
+#include <algorithm>
+#include <iostream>
 #include "Client.h"
+#include "Server.h"
 
 static int breaktime = 5;
+
+enum kahootState {
+    stateNotStarted,
+    statePrepQuestion,
+    stateQuestion,
+    stateAnswers
+};
 
 class Kahoot {
     int id;
     int pin;
     Client * owner;
-    std::vector<Client*> connectedPlayers;
+    std::set<Client*> connectedPlayers;
     std::vector<std::pair<std::string,int>> points;
     std::vector<std::string> questions;
     std::vector<std::string> answers;
@@ -26,7 +38,7 @@ class Kahoot {
     int timer_fd;
     int epoll_fd;
     int currentQuestion;
-    std::string state;
+    int state;
 public:
     Kahoot(Client * owner, char * question_data, int id, int epoll_fd);
     int getId();
@@ -35,16 +47,16 @@ public:
     void removePlayer(Client * client);
     Client* getOwner();
     int getTimerFd();
-    std::string getState();
+    int getState();
     bool isUserAlreadyInRoom(std::string nick);
     int next();
     void setTimer();
-    int writeMessage(Client * client, std::string message);
     int receiveAnswer(Client * client, char * buffer);
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();
     void ownerDisconnected();
     void checkIfAlreadyStarted(Client * client);
+    void writeMessageToOwner(int type, std::string message);
 };
 
 
