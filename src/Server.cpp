@@ -79,37 +79,40 @@ int Server::handlePoll() {
         else {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
-                if (this->clients.find(client) != this->clients.end()) {
-                    if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
-                        // receive "pilot" indicating size of buffer
-                        char msgSize[4];
-                        if((read(client->getFd(),msgSize,4)) <= 0) {
-                            error(0, errno, "Accepting client failed");
-                        }
-                        char * buffer = new char[atoi(msgSize)];
-                        //TODO: ensure full size
-                        if (read(client->getFd(), buffer, atoi(msgSize)) > 0) {
-                            std::cout << buffer << std::endl;
-                            this->handleClient(client, buffer);
-                        }
-                        else
-                            error(0, errno, "Receiving message from client failed");
-                        delete[](buffer);
+                if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
+                    // receive "pilot" indicating size of buffer
+                    char msgSize[4];
+                    if((read(client->getFd(),msgSize,4)) <= 0) {
+                        error(0, errno, "Accepting client failed");
+                        std::cout << "[size]" << msgSize << std::endl;
                     }
+                    char * buffer = new char[atoi(msgSize)];
+                    //TODO: ensure full size
+                    if (read(client->getFd(), buffer, atoi(msgSize)) > 0) {
+                        std::cout << buffer << std::endl;
+                        this->handleClient(client, buffer);
+                    }
+                    else {
+                        error(0, errno, "Receiving message from client failed");
+                        std::cout << "[buffer]" << msgSize << std::endl;
+                    }
+                    delete[](buffer);
+                    break;
                 }
             }
-            for (Kahoot * kahoot : this->kahoots) {
-                int timerFd = kahoot->getTimerFd();
+            for (auto k: this->kahoots) {
+                int timerFd = k.second->getTimerFd();
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
                     // call kahoot to make next move
-                    if ((kahoot->next()) == -1) {
+                    if ((k.second->next()) == -1) {
                         // delete kahoot
-                        this->deleteKahoot(kahoot);
+                        this->deleteKahoot(k);
                         break;
                     }
+                    break;
                 }
             }
         }
@@ -128,7 +131,6 @@ int Server::handleClient(Client *client, char * buffer) {
         case USER_DISCONNECTED:
             printf("user with fd: %d - disconnected\n",client->getFd());
             this->deleteClient(client);
-            delete client;
             break;
         case CREATE_KAHOOT:
             this->createKahoot(buffer, client);
@@ -158,16 +160,17 @@ int Server::handleClient(Client *client, char * buffer) {
 }
 
 void Server::createKahoot(char *data, Client * owner) {
-    Kahoot * kahoot = new Kahoot(owner, data, this->generateUniqueId(), this->epoll_fd);
-    this->kahoots.insert(kahoot);
+    int id = this->generateUniqueId();
+    Kahoot * kahoot = new Kahoot(owner, data, id, this->epoll_fd);
+    this->kahoots[id] = kahoot;
     // notify all users that new kahoot was created
     this->sendRooms(nullptr);
 }
 
 int Server::sendRooms(Client * client) {
     std::string data = "";
-    for (Kahoot * k : this->kahoots) {
-        data += std::to_string(k->getId()) + "|";
+    for (auto k : this->kahoots) {
+        data += std::to_string(k.second->getId()) + "|";
     }
     // if client is not defined broadcast message to all users
     if (client == nullptr) {
@@ -185,8 +188,8 @@ int Server::generateUniqueId() {
     do {
         unique = true;
         id = rand() % 10000;
-        for (Kahoot *k : this->kahoots) {
-            if (k->getId() == id)
+        for (auto k : this->kahoots) {
+            if (k.second->getId() == id)
                 unique = false;
         }
     } while(!unique);
@@ -204,17 +207,17 @@ int Server::addToRoom(char *buffer, Client *client) {
     std::string nick = std::string(ptr);
 
     // check if pin is correct
-    for (Kahoot * k : this->kahoots) {
-        if (k->getId() == roomId) {
-            if (k->getPin() == pin){
+    for (auto k : this->kahoots) {
+        if (k.first == roomId) {
+            if (k.second->getPin() == pin){
                 // check if nick is unique
-                if (!k->isUserAlreadyInRoom(nick)) {
+                if (!k.second->isUserAlreadyInRoom(nick)) {
                     client->setNick(nick);
-                    client->setParticipatingIn(k);
-                    k->addPlayer(client);
+                    client->setParticipatingIn(k.second);
+                    k.second->addPlayer(client);
                     client->writeMessage(JOIN_ROOM,"success|");
                     // broadcast message to other users
-                    k->sendPlayersInRoom(nullptr);
+                    k.second->sendPlayersInRoom(nullptr);
                 } else {
                     client->writeMessage(JOIN_ROOM,"nick is not unique|");
                 }
@@ -226,17 +229,17 @@ int Server::addToRoom(char *buffer, Client *client) {
     }
 }
 
-void Server::deleteKahoot(Kahoot *kahoot) {
+void Server::deleteKahoot(std::pair<const int,Kahoot*> kahoot) {
     for(auto it = this->kahoots.begin(); it != this->kahoots.end(); ) {
         if(*it == kahoot)
             it = this->kahoots.erase(it);
         else
             ++it;
     }
-    delete kahoot;
+    delete kahoot.second;
 }
 
-void Server::deleteClient(Client *client) {
+void Server::   deleteClient(Client *client) {
     for(auto it = this->clients.begin(); it != this->clients.end(); ) {
         if(*it == client)
             it = this->clients.erase(it);

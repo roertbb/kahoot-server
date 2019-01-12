@@ -54,7 +54,6 @@ void Kahoot::addPlayer(Client *client) {
     if (!inPoints)
         this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
     this->connectedPlayers.insert(client);
-    std::cout << "inserted" << std::endl;
 }
 
 Client *Kahoot::getOwner() {
@@ -84,7 +83,7 @@ void Kahoot::setTimer() {
             }
     };
     // register epoll event
-    epoll_event ee {EPOLLIN|EPOLLONESHOT, {.fd = timer_fd}};
+    epoll_event ee {EPOLLIN, {.fd = timer_fd}};
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timer_fd, &ee);
     // start timer
     timerfd_settime(timer_fd, 0, &ts, 0);
@@ -95,7 +94,6 @@ int Kahoot::next() {
     if (this->state == "not-started") {
         this->state = "prep-question";
         this->owner->writeMessage(START_KAHOOT,"start kahoot");
-        //TODO: change iteration
         for(Client * client : this->connectedPlayers) {
             client->writeMessage(START_KAHOOT,"");
         }
@@ -104,7 +102,6 @@ int Kahoot::next() {
     } else if (this->state == "prep-question") {
         this->state = "question";
         this->owner->writeMessage(SEND_QUESTION,"send question");
-        //TODO: change iteration
         for(Client * client : this->connectedPlayers) {
             client->writeMessage(SEND_QUESTION,this->questions[this->currentQuestion]);
         }
@@ -122,7 +119,6 @@ int Kahoot::next() {
         for (auto const& a : ans) {
             answersStr += "|" + a.first + ":" + std::to_string(a.second);
         }
-        //TODO: change iteration
         for (Client * client : this->connectedPlayers) {
             std::string answer;
             if (this->receivedAnswers.find(client) == this->receivedAnswers.end()) {
@@ -146,8 +142,6 @@ int Kahoot::next() {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
             this->owner->writeMessage(SEND_PREPARE_BEFORE_NEXT,"0|");
-            this->owner->setParticipatingIn(nullptr);
-            //TODO: change iteration
             for (Client * client : this->connectedPlayers) {
                 // send message to user with score and placement
                 for (int i=0; i<this->points.size(); i++) {
@@ -163,7 +157,6 @@ int Kahoot::next() {
             this->currentQuestion++;
             this->state = "prep-question";
             this->owner->writeMessage(SEND_PREPARE_BEFORE_NEXT,"");
-            //TODO: change iteration
             for (Client * client : this->connectedPlayers) {
                 client->writeMessage(SEND_PREPARE_BEFORE_NEXT,"");
             }
@@ -216,14 +209,12 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
 
 void Kahoot::sendPlayersInRoom(Client * client) {
     std::string playersInRoom = "";
-    //TODO: change iteration
     for (Client * client : this->connectedPlayers) {
         playersInRoom += client->getNick() + "|";
     }
     // if client is not defined broadcast message to all participating users
     if (client == nullptr) {
         this->owner->writeMessage(SEND_PLAYERS_IN_ROOM,playersInRoom);
-        //TODO: change iteration
         for (Client * client : this->connectedPlayers) {
             client->writeMessage(SEND_PLAYERS_IN_ROOM,playersInRoom);
         }

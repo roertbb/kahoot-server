@@ -17,8 +17,7 @@ Client::~Client() {
     if (myKahoot != nullptr) {
         if (myKahoot->getOwner() == this)
             myKahoot->ownerDisconnected();
-        else
-            myKahoot->removePlayer(this);
+        myKahoot->removePlayer(this);
     }
     epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
     shutdown(this->fd, SHUT_RDWR);

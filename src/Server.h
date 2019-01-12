@@ -9,7 +9,6 @@
 #define CREATE_KAHOOT 2
 #define SEND_ROOMS 3
 #define JOIN_ROOM 4
-#define SEND_PLAYERS_IN_ROOM 5
 #define OWNER_START_KAHOOT 5
 #define START_KAHOOT 6
 #define RECEIVE_ANSWER_FROM_CLIENT 6
@@ -20,6 +19,7 @@
 #define REQUEST_ROOM_MEMBERS 11
 #define SEND_OWNER_DISCONNECTED 12
 #define CHECK_IF_ALREADY_STARTED 13
+#define SEND_PLAYERS_IN_ROOM 14
 
 #include <cstdio>
 #include <cstdlib>
@@ -46,7 +46,7 @@ class Server {
     int epoll_fd;
     struct sockaddr_in server_data;
     std::unordered_set<Client*> clients;
-    std::unordered_set<Kahoot*> kahoots;
+    std::map<int,Kahoot*> kahoots;
 public:
     void run();
     int initSocketConnection();
@@ -57,7 +57,7 @@ public:
     int sendRooms(Client * client);
     int generateUniqueId();
     int addToRoom(char * buffer, Client * client);
-    void deleteKahoot(Kahoot * kahoot);
+    void deleteKahoot(std::pair<const int,Kahoot*> );
     void deleteClient(Client *client);
 };
 
