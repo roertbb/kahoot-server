@@ -182,15 +182,16 @@ int Server::sendRooms(Client * client) {
 }
 
 int Server::generateUniqueId() {
-    int id = rand() % 10000;
-    bool unique = false;
-    while(!unique) {
+    bool unique;
+    int id;
+    do {
         unique = true;
-        for (Kahoot * k : this->kahoots) {
+        id = rand() % 10000;
+        for (Kahoot *k : this->kahoots) {
             if (k->getId() == id)
                 unique = false;
         }
-    }
+    } while(!unique);
     return id;
 }
 
