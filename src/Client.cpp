@@ -44,3 +44,20 @@ void Client::setParticipatingIn(Kahoot *kahoot) {
 Kahoot *Client::getParticipatingIn() {
     return this->participatingIn;
 }
+
+void Client::writeMessage(int type, std::string message) {
+    std::string typeToStr = std::to_string(type);
+    std::string parsedMessageType = std::string(2 - typeToStr.length(),'0').append(typeToStr) + "|";
+    std::string messageToSize = std::to_string(message.length() + 3);
+    std::string messageSize = std::string(4 - messageToSize.length(), '0').append(messageToSize);
+    char * c = const_cast<char*>((messageSize).c_str());
+    std::cout << messageSize << std::endl;
+    if ((write(this->fd,c,4)) == -1) {
+        perror("sending message size failed");
+    }
+    std::cout << (parsedMessageType + message) << std::endl;
+    char * c2 = const_cast<char*>((parsedMessageType + message).c_str());
+    if ((write(this->fd,c2,(parsedMessageType + message).length())) == -1) {
+        perror("sending message failed");
+    }
+}

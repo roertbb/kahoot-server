@@ -9,7 +9,11 @@
 #include <map>
 #include <cstring>
 #include <sstream>
+#include <sys/timerfd.h>
+#include <algorithm>
+#include <iostream>
 #include "Client.h"
+#include "Server.h"
 
 static int breaktime = 5;
 
@@ -39,7 +43,6 @@ public:
     bool isUserAlreadyInRoom(std::string nick);
     int next();
     void setTimer();
-    int writeMessage(Client * client, std::string message);
     int receiveAnswer(Client * client, char * buffer);
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();

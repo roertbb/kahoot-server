@@ -120,21 +120,6 @@ int Server::handlePoll() {
     }
 }
 
-int Server::writeMessage(Client *client, std::string message) {
-    std::string msgToSize = std::to_string(message.length());
-    std::string msgSize = std::string(4 - msgToSize.length(), '0').append(msgToSize);
-    char * c = const_cast<char*>(msgSize.c_str());
-    if ((write(client->getFd(),c,4)) == -1) {
-        perror("sending message size failed");
-        return 1;
-    }
-    char * c2 = const_cast<char*>(message.c_str());
-    if ((write(client->getFd(),c2,message.length())) == -1) {
-        perror("sending message failed");
-        return 1;
-    }
-}
-
 int Server::getMessageCode(char *buffer) {
     int num1 = buffer[0] - 48;
     int num2 = buffer[1] - 48;
@@ -144,31 +129,33 @@ int Server::getMessageCode(char *buffer) {
 int Server::handleClient(Client *client, char * buffer) {
     int msgcode = getMessageCode(buffer);
     switch(msgcode) {
-        case 1:
+        case USER_DISCONNECTED:
             printf("user with fd: %d - disconnected\n",client->getFd());
             this->clients.erase(this->clients.find(client));
             delete client;
             break;
-        case 2:
+        case CREATE_KAHOOT:
             this->createKahoot(buffer, client);
             break;
-        case 3:
+        case SEND_ROOMS:
             this->sendRooms(client);
             break;
-        case 4:
+        case JOIN_ROOM:
             this->addToRoom(buffer, client);
             break;
-        case 5:
+        case OWNER_START_KAHOOT:
             client->getParticipatingIn()->next();
             break;
-        case 6:
+        case RECEIVE_ANSWER_FROM_CLIENT:
             client->getParticipatingIn()->receiveAnswer(client,buffer);
             break;
-        case 11:
+        case REQUEST_ROOM_MEMBERS:
             client->getParticipatingIn()->sendPlayersInRoom(client);
             break;
-        case 13:
+        case CHECK_IF_ALREADY_STARTED:
             client->getParticipatingIn()->checkIfAlreadyStarted(client);
+        default:
+            perror("Shouldn't ever happen...\n");
     }
 }
 
@@ -180,18 +167,18 @@ void Server::createKahoot(char *data, Client * owner) {
 }
 
 int Server::sendRooms(Client * client) {
-    std::string data = "03|";
+    std::string data = "";
     for (Kahoot * k : this->kahoots) {
         data += std::to_string(k->getId()) + "|";
     }
     // if client is not defined broadcast message to all users
     if (client == nullptr) {
         for (Client * c : this->clients) {
-            this->writeMessage(c,data);
+            c->writeMessage(SEND_ROOMS,data);
         }
     }
     else
-        this->writeMessage(client,data);
+        client->writeMessage(SEND_ROOMS,data);
 }
 
 int Server::generateUniqueId() {
@@ -226,15 +213,15 @@ int Server::addToRoom(char *buffer, Client *client) {
                     client->setNick(nick);
                     client->setParticipatingIn(k);
                     k->addPlayer(client);
-                    this->writeMessage(client,"04|success|");
+                    client->writeMessage(JOIN_ROOM,"success|");
                     // broadcast message to other users
                     k->sendPlayersInRoom(nullptr);
                 } else {
-                    this->writeMessage(client,"04|nick is not unique|");
+                    client->writeMessage(JOIN_ROOM,"nick is not unique|");
                 }
             }
             else {
-                this->writeMessage(client,"04|incorrect pin|");
+                client->writeMessage(JOIN_ROOM,"incorrect pin|");
             }
         }
     }

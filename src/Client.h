@@ -28,6 +28,7 @@ public:
     std::string getNick();
     void setParticipatingIn(Kahoot * kahoot);
     Kahoot * getParticipatingIn();
+    void writeMessage(int type, std::string message);
 };
 
 
