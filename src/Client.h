@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <string>
+#include "Buffer.h"
 
 // forward declaration
 class Kahoot;
@@ -20,6 +21,7 @@ class Client{
     int epoll_fd;
     std::string nick;
     Kahoot * participatingIn;
+    Buffer toWrite;
 public:
     Client(int fd, int epoll_fd);
     ~Client();
@@ -29,6 +31,8 @@ public:
     void setParticipatingIn(Kahoot * kahoot);
     Kahoot * getParticipatingIn();
     void writeMessage(int type, std::string message);
+    void writeRemaining();
+    void toggleWrite(bool write);
 };
 
 
