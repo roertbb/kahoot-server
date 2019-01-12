@@ -36,8 +36,8 @@ int Server::initSocketConnection() {
 
     sockaddr_in server_data {
             .sin_family = AF_INET,
-            .sin_port = htons(std::stoi(serverPort)), //accept connection to all the IPs of the machine
-            .sin_addr = {INADDR_ANY}
+            .sin_port = htons(std::stoi(serverPort)),
+            .sin_addr = {INADDR_ANY} //accept connection to all the IPs of the machine
     };
 
     if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0)
@@ -79,16 +79,17 @@ int Server::handlePoll() {
         else {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
-                if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
+                int clientFd = client->getFd();
+                if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
                     // receive "pilot" indicating size of buffer
                     char msgSize[4];
-                    if((read(client->getFd(),msgSize,4)) <= 0) {
+                    if((read(clientFd,msgSize,4)) <= 0) {
                         error(0, errno, "Accepting client failed");
                         std::cout << "[size]" << msgSize << std::endl;
                     }
                     char * buffer = new char[atoi(msgSize)];
                     //TODO: ensure full size
-                    if (read(client->getFd(), buffer, atoi(msgSize)) > 0) {
+                    if (read(clientFd, buffer, atoi(msgSize)) > 0) {
                         std::cout << buffer << std::endl;
                         this->handleClient(client, buffer);
                     }
@@ -97,7 +98,9 @@ int Server::handlePoll() {
                         std::cout << "[buffer]" << msgSize << std::endl;
                     }
                     delete[](buffer);
-                    break;
+                }
+                else if (ee.events & ~(EPOLLIN) && ee.data.fd == clientFd) {
+                    this->deleteClient(client);
                 }
             }
             for (auto k: this->kahoots) {
@@ -110,9 +113,7 @@ int Server::handlePoll() {
                     if ((k.second->next()) == -1) {
                         // delete kahoot
                         this->deleteKahoot(k);
-                        break;
                     }
-                    break;
                 }
             }
         }

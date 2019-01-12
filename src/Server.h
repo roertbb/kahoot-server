@@ -31,7 +31,7 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <sys/poll.h>
-#include <unordered_set>
+#include <set>
 #include <cerrno>
 #include <error.h>
 #include <sstream>
@@ -45,7 +45,7 @@ class Server {
     int server_fd;
     int epoll_fd;
     struct sockaddr_in server_data;
-    std::unordered_set<Client*> clients;
+    std::set<Client*> clients;
     std::map<int,Kahoot*> kahoots;
 public:
     void run();

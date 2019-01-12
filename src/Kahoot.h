@@ -18,6 +18,13 @@
 
 static int breaktime = 5;
 
+enum kahootState {
+    stateNotStarted,
+    statePrepQuestion,
+    stateQuestion,
+    stateAnswers
+};
+
 class Kahoot {
     int id;
     int pin;
@@ -31,7 +38,7 @@ class Kahoot {
     int timer_fd;
     int epoll_fd;
     int currentQuestion;
-    std::string state;
+    int state;
 public:
     Kahoot(Client * owner, char * question_data, int id, int epoll_fd);
     int getId();
@@ -40,7 +47,7 @@ public:
     void removePlayer(Client * client);
     Client* getOwner();
     int getTimerFd();
-    std::string getState();
+    int getState();
     bool isUserAlreadyInRoom(std::string nick);
     int next();
     void setTimer();
@@ -49,6 +56,7 @@ public:
     float getRemainingTime();
     void ownerDisconnected();
     void checkIfAlreadyStarted(Client * client);
+    void writeMessageToOwner(int type, std::string message);
 };
 
 
