@@ -53,7 +53,7 @@ int Server::initSocketConnection() {
 int Server::handlePoll() {
     this->epoll_fd = epoll_create1(0);
 
-    epoll_event ee {EPOLLIN , {.fd = this->server_fd}};
+    epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
     epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, this->server_fd, &ee);
 
     while(true) {
@@ -100,17 +100,14 @@ int Server::handlePoll() {
             }
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
-                std::cout << "timer #1" << std::endl;
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
-                    std::cout << "timer #2" << std::endl;
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
                     // call kahoot to make next move
                     if ((kahoot->next()) == -1) {
                         // delete kahoot
-                        this->kahoots.erase(this->kahoots.find(kahoot));
-                        delete kahoot;
+                        this->deleteKahoot(kahoot);
                         break;
                     }
                 }
@@ -130,7 +127,7 @@ int Server::handleClient(Client *client, char * buffer) {
     switch(msgcode) {
         case USER_DISCONNECTED:
             printf("user with fd: %d - disconnected\n",client->getFd());
-            this->clients.erase(this->clients.find(client));
+            this->deleteClient(client);
             delete client;
             break;
         case CREATE_KAHOOT:
@@ -211,7 +208,7 @@ int Server::addToRoom(char *buffer, Client *client) {
         if (k->getId() == roomId) {
             if (k->getPin() == pin){
                 // check if nick is unique
-                if (!k->isUserAlreadyInRoom(client->getNick())) {
+                if (!k->isUserAlreadyInRoom(nick)) {
                     client->setNick(nick);
                     client->setParticipatingIn(k);
                     k->addPlayer(client);
@@ -227,4 +224,24 @@ int Server::addToRoom(char *buffer, Client *client) {
             }
         }
     }
+}
+
+void Server::deleteKahoot(Kahoot *kahoot) {
+    for(auto it = this->kahoots.begin(); it != this->kahoots.end(); ) {
+        if(*it == kahoot)
+            it = this->kahoots.erase(it);
+        else
+            ++it;
+    }
+    delete kahoot;
+}
+
+void Server::deleteClient(Client *client) {
+    for(auto it = this->clients.begin(); it != this->clients.end(); ) {
+        if(*it == client)
+            it = this->clients.erase(it);
+        else
+            ++it;
+    }
+    delete client;
 }

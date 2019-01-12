@@ -57,6 +57,8 @@ public:
     int sendRooms(Client * client);
     int generateUniqueId();
     int addToRoom(char * buffer, Client * client);
+    void deleteKahoot(Kahoot * kahoot);
+    void deleteClient(Client *client);
 };
 
 
