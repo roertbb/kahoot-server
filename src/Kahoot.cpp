@@ -53,7 +53,7 @@ void Kahoot::addPlayer(Client *client) {
     }
     if (!inPoints)
         this->points.push_back(std::pair<std::string,int>(client->getNick(),0));
-    this->connectedPlayers.push_back(client);
+    this->connectedPlayers.insert(client);
 }
 
 Client *Kahoot::getOwner() {
@@ -239,15 +239,17 @@ float Kahoot::getRemainingTime() {
 }
 
 void Kahoot::removePlayer(Client *client) {
-    for (int i=0; i<this->connectedPlayers.size(); i++) {
-        if (this->connectedPlayers[i] == client)
-            this->connectedPlayers.erase(this->connectedPlayers.begin()+i);
+    for (auto it = this->connectedPlayers.begin(); it != this->connectedPlayers.end();) {
+        if(*it == client)
+            it = this->connectedPlayers.erase(it);
+        else
+            ++it;
     }
 }
 
 void Kahoot::ownerDisconnected() {
     if (this->state == "not-started") {
-        for (Client * client : this->connectedPlayers) {
+        for (auto client : this->connectedPlayers) {
             client->writeMessage(SEND_OWNER_DISCONNECTED,"");
         }
     }

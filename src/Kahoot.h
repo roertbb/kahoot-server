@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <cstring>
 #include <sstream>
 #include <sys/timerfd.h>
@@ -21,7 +22,7 @@ class Kahoot {
     int id;
     int pin;
     Client * owner;
-    std::vector<Client*> connectedPlayers;
+    std::set<Client*> connectedPlayers;
     std::vector<std::pair<std::string,int>> points;
     std::vector<std::string> questions;
     std::vector<std::string> answers;

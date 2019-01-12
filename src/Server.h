@@ -48,7 +48,7 @@ class Server {
     std::unordered_set<Client*> clients;
     std::unordered_set<Kahoot*> kahoots;
 public:
-    Server();
+    void run();
     int initSocketConnection();
     int handlePoll();
     int handleClient(Client * client, char * buffer);

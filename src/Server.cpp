@@ -6,7 +6,7 @@
 #include <fstream>
 #include "Server.h"
 
-Server::Server() {
+void Server::run() {
     this->initSocketConnection();
     this->handlePoll();
 }
@@ -16,19 +16,17 @@ int Server::initSocketConnection() {
     std::ifstream configFile;
     configFile.open(".env");
     std::string serverAddress, serverPort;
-    if (!configFile.is_open()) {
-        perror("Error reading config from file");
-        return 1;
-    }
+    if (!configFile.is_open())
+        error(1, errno, "Error reading config file");
+
     configFile >> serverAddress;
     configFile >> serverPort;
     configFile.close();
 
     this->server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (this->server_fd < 0) {
-        perror("Creating socket failed\n");
-        return 1;
-    }
+    if (this->server_fd < 0)
+        error(1, errno, "Creating socket failed");
+
 
     int n = 1;
     setsockopt(this->server_fd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof(n));
@@ -38,19 +36,16 @@ int Server::initSocketConnection() {
 
     sockaddr_in server_data {
             .sin_family = AF_INET,
-            .sin_port = htons(std::stoi(serverPort)),
-            .sin_addr = {inet_addr(serverAddress.c_str())}
+            .sin_port = htons(std::stoi(serverPort)), //accept connection to all the IPs of the machine
+            .sin_addr = {INADDR_ANY}
     };
 
-    if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0) {
-        perror("Binding socket failed\n");
-        return 1;
-    }
+    if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0)
+        error(1, errno, "Binding socket failed");
 
-    if ((listen(this->server_fd, 10)) < 0) {
-        perror("Creating queue for listening sockets failed\n");
-        return 1;
-    }
+
+    if ((listen(this->server_fd, 10)) < 0)
+        error(1, errno, "Creating queue for listening sockets failed");
 
     printf("Listening for client's connections\n");
 }
@@ -58,24 +53,24 @@ int Server::initSocketConnection() {
 int Server::handlePoll() {
     this->epoll_fd = epoll_create1(0);
 
-    epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
+    epoll_event ee {EPOLLIN , {.fd = this->server_fd}};
     epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, this->server_fd, &ee);
 
     while(true) {
-        if ((epoll_wait(this->epoll_fd, &ee, 1, -1)) == -1) {
-            perror("Receiving message to epoll failed\n");
-            return 1;
-        }
+        if ((epoll_wait(this->epoll_fd, &ee, 1, -1)) == -1)
+            error(0, errno, "epoll failed");
+
         // handle new user
         if (ee.events & EPOLLIN && ee.data.fd == server_fd) {
             sockaddr_in client_address {};
             socklen_t client_address_size = sizeof(client_address);
 
             int client_fd = accept(server_fd, (sockaddr *) &client_address, &client_address_size);
-            if (client_fd < 0) {
-                perror("Accepting client failed");
-                return 1;
-            }
+            if (client_fd < 0)
+                error(1, errno, "Accepting client failed");
+
+            //set no-blocking mode
+            //fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
             this->clients.insert(new Client(client_fd, this->epoll_fd));
 
@@ -88,22 +83,26 @@ int Server::handlePoll() {
                     if (ee.events & EPOLLIN && ee.data.fd == client->getFd()) {
                         // receive "pilot" indicating size of buffer
                         char msgSize[4];
-                        if((read(client->getFd(),msgSize,4)) == -1) {
-                            perror("Reading message size failed\n");
-                            return 1;
+                        if((read(client->getFd(),msgSize,4)) <= 0) {
+                            error(0, errno, "Accepting client failed");
                         }
                         char * buffer = new char[atoi(msgSize)];
-                        int count = read(client->getFd(), buffer, atoi(msgSize));
-                        if (count > 0) {
+                        //TODO: ensure full size
+                        if (read(client->getFd(), buffer, atoi(msgSize)) > 0) {
+                            std::cout << buffer << std::endl;
                             this->handleClient(client, buffer);
                         }
+                        else
+                            error(0, errno, "Receiving message from client failed");
                         delete[](buffer);
                     }
                 }
             }
             for (Kahoot * kahoot : this->kahoots) {
                 int timerFd = kahoot->getTimerFd();
+                std::cout << "timer #1" << std::endl;
                 if (ee.events & EPOLLIN && ee.data.fd == timerFd) {
+                    std::cout << "timer #2" << std::endl;
                     // clear timer
                     epoll_ctl(this->epoll_fd,EPOLL_CTL_DEL,timerFd,NULL);
                     close(timerFd);
@@ -154,8 +153,10 @@ int Server::handleClient(Client *client, char * buffer) {
             break;
         case CHECK_IF_ALREADY_STARTED:
             client->getParticipatingIn()->checkIfAlreadyStarted(client);
+            break;
         default:
-            perror("Shouldn't ever happen...\n");
+            printf("%s\n",buffer);
+            perror("Should never happen...\n");
     }
 }
 
