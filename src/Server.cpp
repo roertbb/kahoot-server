@@ -82,8 +82,10 @@ int Server::handlePoll() {
                 int clientFd = client->getFd();
                 if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
                     int count = recv(clientFd, this->buffer.dataPos(),this->buffer.remaining(),0);
-                    if (count <= 0)
+                    if (count <= 0) {
                         error(0, errno, "Receiving message from client failed");
+                        ee.events |= EPOLLERR;
+                    }
                     else {
                         this->buffer.pos += count;
                         char * endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos);
