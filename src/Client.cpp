@@ -69,7 +69,6 @@ void Client::writeMessage(int type, std::string message) {
 }
 
 void Client::writeRemaining() {
-    std::cout << "writeRemaining" << std::endl;
     do {
         int rem = this->toWrite.remaining();
         int sent = send(this->fd, this->toWrite.data+this->toWrite.pos, rem,MSG_DONTWAIT);

@@ -96,7 +96,7 @@ int Server::handlePoll() {
                                 int currentMessageLen = endOfMessage - buffer.data +1;
                                 char * msg = new char[currentMessageLen];
                                 strncpy(msg,buffer.data,currentMessageLen-1);
-                                std::cout << msg << std::endl;
+                                //std::cout << msg << std::endl;
                                 this->handleClient(client, msg);
                                 delete [] msg;
                                 int nextMessageBegin = buffer.pos - currentMessageLen;
