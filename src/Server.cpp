@@ -70,7 +70,7 @@ int Server::handlePoll() {
                 error(1, errno, "Accepting client failed");
 
             //set no-blocking mode
-            //fcntl(client_fd, F_SETFL, O_NONBLOCK);
+            fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
             this->clients.insert(new Client(client_fd, this->epoll_fd));
 
@@ -81,25 +81,35 @@ int Server::handlePoll() {
             for (Client * client : this->clients) {
                 int clientFd = client->getFd();
                 if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
-                    // receive "pilot" indicating size of buffer
-                    char msgSize[4];
-                    if((read(clientFd,msgSize,4)) <= 0) {
-                        error(0, errno, "Accepting client failed");
-                        std::cout << "[size]" << msgSize << std::endl;
-                    }
-                    char * buffer = new char[atoi(msgSize)];
-                    //TODO: ensure full size
-                    if (read(clientFd, buffer, atoi(msgSize)) > 0) {
-                        std::cout << buffer << std::endl;
-                        this->handleClient(client, buffer);
+                    int count = recv(clientFd, this->buffer.dataPos(),this->buffer.remaining(),0);
+                    if (count <= 0) {
+                        error(0, errno, "Receiving message from client failed");
+                        ee.events |= EPOLLERR;
                     }
                     else {
-                        error(0, errno, "Receiving message from client failed");
-                        std::cout << "[buffer]" << msgSize << std::endl;
+                        this->buffer.pos += count;
+                        char * endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos);
+                        if (endOfMessage == nullptr && !buffer.remaining())
+                            buffer.resize();
+                        else {
+                            do {
+                                int currentMessageLen = endOfMessage - buffer.data +1;
+                                char * msg = new char[currentMessageLen];
+                                strncpy(msg,buffer.data,currentMessageLen-1);
+                                //std::cout << msg << std::endl;
+                                this->handleClient(client, msg);
+                                delete [] msg;
+                                int nextMessageBegin = buffer.pos - currentMessageLen;
+                                memmove(buffer.data, endOfMessage+1,nextMessageBegin);
+                                buffer.pos = nextMessageBegin;
+                            } while((endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos)));
+                        }
                     }
-                    delete[](buffer);
                 }
-                else if (ee.events & ~(EPOLLIN) && ee.data.fd == clientFd) {
+                else if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
+                    client->writeRemaining();
+                }
+                else if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
                     this->deleteClient(client);
                 }
             }
@@ -240,7 +250,7 @@ void Server::deleteKahoot(std::pair<const int,Kahoot*> kahoot) {
     delete kahoot.second;
 }
 
-void Server::   deleteClient(Client *client) {
+void Server::deleteClient(Client *client) {
     for(auto it = this->clients.begin(); it != this->clients.end(); ) {
         if(*it == client)
             it = this->clients.erase(it);

@@ -47,16 +47,42 @@ Kahoot *Client::getParticipatingIn() {
 void Client::writeMessage(int type, std::string message) {
     std::string typeToStr = std::to_string(type);
     std::string parsedMessageType = std::string(2 - typeToStr.length(),'0').append(typeToStr) + "|";
-    std::string messageToSize = std::to_string(message.length() + 3);
-    std::string messageSize = std::string(4 - messageToSize.length(), '0').append(messageToSize);
-    char * c = const_cast<char*>((messageSize).c_str());
-    //std::cout << messageSize << std::endl;
-    if ((write(this->fd,c,4)) == -1) {
-        perror("sending message size failed");
+    std::string parsedMessage = parsedMessageType + message + "\n";
+    int msgSize = parsedMessage.size();
+
+    char * c = const_cast<char*>((parsedMessage).c_str());
+    int sent = send(this->fd, c, msgSize, MSG_DONTWAIT);
+    if (sent == msgSize) {
+        return;
     }
-    //std::cout << (parsedMessageType + message) << std::endl;
-    char * c2 = const_cast<char*>((parsedMessageType + message).c_str());
-    if ((write(this->fd,c2,(parsedMessageType + message).length())) == -1) {
-        perror("sending message failed");
+    else if (sent == -1) {
+        if(errno != EWOULDBLOCK && errno != EAGAIN){
+            error(0,errno,"Sending data failed");
+            return;
+        }
+        this->toWrite.writeLater(c,msgSize);
     }
+    else {
+        this->toWrite.writeLater(c+sent,msgSize-sent);
+    }
+    this->toggleWrite(true);
+}
+
+void Client::writeRemaining() {
+    do {
+        int rem = this->toWrite.remaining();
+        int sent = send(this->fd, this->toWrite.data+this->toWrite.pos, rem,MSG_DONTWAIT);
+        if (sent == rem) {
+            this->toggleWrite(false);
+        }
+        else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN)
+            error(0,errno,"Sending data failed");
+        else
+            this->toWrite.pos += sent;
+    } while(false);
+}
+
+void Client::toggleWrite(bool write) {
+    epoll_event ee {EPOLLIN|EPOLLRDHUP|(write?EPOLLOUT:0), {.ptr=this}};
+    epoll_ctl(this->epoll_fd, EPOLL_CTL_MOD, this->fd, &ee);
 }

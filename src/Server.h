@@ -39,6 +39,7 @@
 #include <sys/timerfd.h>
 #include "Client.h"
 #include "Kahoot.h"
+#include "Buffer.h"
 
 
 class Server {
@@ -47,6 +48,7 @@ class Server {
     struct sockaddr_in server_data;
     std::set<Client*> clients;
     std::map<int,Kahoot*> kahoots;
+    Buffer buffer;
 public:
     void run();
     int initSocketConnection();
