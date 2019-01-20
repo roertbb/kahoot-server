@@ -1,3 +1,8 @@
 # CMake
 cmake-build-*/
 /.idea
+cmake_install.cmake
+CMakeCache.txt
+kahoot_server
+Makefile
+CMakeFiles

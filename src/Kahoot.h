@@ -57,6 +57,7 @@ public:
     void ownerDisconnected();
     void checkIfAlreadyStarted(Client * client);
     void writeMessageToOwner(int type, std::string message);
+    void sendPin();
 };
 
 
