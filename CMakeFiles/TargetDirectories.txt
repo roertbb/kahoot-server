@@ -1,3 +1,0 @@
-/home/roertbb/CLionProjects/kahoot-it-server/CMakeFiles/rebuild_cache.dir
-/home/roertbb/CLionProjects/kahoot-it-server/CMakeFiles/kahoot_server.dir
-/home/roertbb/CLionProjects/kahoot-it-server/CMakeFiles/edit_cache.dir
