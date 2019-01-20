@@ -281,3 +281,7 @@ void Kahoot::writeMessageToOwner(int type, std::string message) {
     if (this->owner != nullptr)
         this->owner->writeMessage(type,message);
 }
+
+void Kahoot::sendPin() {
+    this->writeMessageToOwner(GET_PIN, std::to_string(this->pin));
+}

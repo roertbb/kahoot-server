@@ -20,6 +20,7 @@
 #define SEND_OWNER_DISCONNECTED 12
 #define CHECK_IF_ALREADY_STARTED 13
 #define SEND_PLAYERS_IN_ROOM 14
+#define GET_PIN 15
 
 #include <cstdio>
 #include <cstdlib>

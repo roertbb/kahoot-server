@@ -164,6 +164,9 @@ int Server::handleClient(Client *client, char * buffer) {
         case CHECK_IF_ALREADY_STARTED:
             client->getParticipatingIn()->checkIfAlreadyStarted(client);
             break;
+        case GET_PIN:
+            client->getParticipatingIn()->sendPin();
+            break;
         default:
             printf("%s\n",buffer);
             perror("Should never happen...\n");
