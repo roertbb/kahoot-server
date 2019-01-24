@@ -23,6 +23,7 @@ class Client{
     Kahoot * participatingIn;
     Buffer toWrite;
 public:
+    Buffer receiver;
     Client(int fd, int epoll_fd);
     ~Client();
     int getFd();

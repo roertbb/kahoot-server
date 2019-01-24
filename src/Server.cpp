@@ -88,28 +88,28 @@ int Server::handlePoll() {
                 }
                 // then accept new
                 else if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
-                    int count = recv(clientFd, this->buffer.dataPos(),this->buffer.remaining(),0);
+                    int count = recv(clientFd, client->receiver.dataPos(),client->receiver.remaining(),0);
                     if (count <= 0) {
                         error(0, errno, "Receiving message from client failed");
                         ee.events |= EPOLLERR;
                     }
                     else {
-                        this->buffer.pos += count;
-                        char * endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos);
-                        if (endOfMessage == nullptr && !buffer.remaining())
-                            buffer.resize();
+                        client->receiver.pos += count;
+                        char * endOfMessage = (char*) memchr(client->receiver.data, '\n', client->receiver.pos);
+                        if (endOfMessage == nullptr && !client->receiver.remaining())
+                            client->receiver.resize();
                         else {
                             do {
-                                int currentMessageLen = endOfMessage - buffer.data +1;
+                                int currentMessageLen = endOfMessage - client->receiver.data +1;
                                 char * msg = new char[currentMessageLen];
-                                strncpy(msg,buffer.data,currentMessageLen-1);
+                                strncpy(msg,client->receiver.data,currentMessageLen-1);
                                 //std::cout << msg << std::endl;
                                 this->handleClient(client, msg);
                                 delete [] msg;
-                                int nextMessageBegin = buffer.pos - currentMessageLen;
-                                memmove(buffer.data, endOfMessage+1,nextMessageBegin);
-                                buffer.pos = nextMessageBegin;
-                            } while((endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos)));
+                                int nextMessageBegin = client->receiver.pos - currentMessageLen;
+                                memmove(client->receiver.data, endOfMessage+1, nextMessageBegin);
+                                client->receiver.pos = nextMessageBegin;
+                            } while((endOfMessage = (char*) memchr(client->receiver.data, '\n', client->receiver.pos)));
                         }
                     }
                 }
