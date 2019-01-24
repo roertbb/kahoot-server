@@ -51,33 +51,46 @@ void Client::writeMessage(int type, std::string message) {
     int msgSize = parsedMessage.size();
 
     char * c = const_cast<char*>((parsedMessage).c_str());
-    int sent = send(this->fd, c, msgSize, MSG_DONTWAIT);
-    if (sent == msgSize) {
+
+    // if data already in buffer, add it at the end of the buffer
+    if (this->toWrite.pending) {
+        this->toWrite.appendToBuffer(c,msgSize);
         return;
     }
-    else if (sent == -1) {
-        if(errno != EWOULDBLOCK && errno != EAGAIN){
-            error(0,errno,"Sending data failed");
+    // else try to send it to user
+    else {
+        int sent = send(this->fd, c, msgSize, MSG_DONTWAIT);
+        // if whole message send - all is ok - return
+        if (sent == msgSize) {
             return;
         }
-        this->toWrite.writeLater(c,msgSize);
+        // error handling
+        else if (sent <= 0) {
+            this->toWrite.writeLater(c,msgSize);
+        }
+        // if not whole add it to buffer
+        else {
+            this->toWrite.writeLater(c+sent,msgSize-sent);
+        }
+        // toggle buffer to send data when possible
+        this->toggleWrite(true);
     }
-    else {
-        this->toWrite.writeLater(c+sent,msgSize-sent);
-    }
-    this->toggleWrite(true);
 }
 
-void Client::writeRemaining() {
+int Client::writeRemaining() {
     int rem = this->toWrite.remaining();
     int sent = send(this->fd, this->toWrite.data+this->toWrite.pos, rem,MSG_DONTWAIT);
     if (sent == rem) {
+        this->toWrite.pending = false;
         this->toggleWrite(false);
     }
-    else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN)
+    else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN) {
         error(0,errno,"Sending data failed");
+        return -1;
+    }
     else
         this->toWrite.pos += sent;
+    return 0;
 }
 
 void Client::toggleWrite(bool write) {

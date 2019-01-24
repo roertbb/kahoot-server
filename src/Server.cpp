@@ -83,7 +83,8 @@ int Server::handlePoll() {
 
                 // first send remaining data
                 if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
-                    client->writeRemaining();
+                    if (client->writeRemaining() < 0)
+                        ee.events |= EPOLLERR;
                 }
                 // then accept new
                 else if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
@@ -112,7 +113,7 @@ int Server::handlePoll() {
                         }
                     }
                 }
-                // disconnect client when error occured
+                // disconnect client when error occurred
                 if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
                     this->deleteClient(client);
                 }

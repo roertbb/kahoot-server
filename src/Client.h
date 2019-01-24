@@ -31,7 +31,7 @@ public:
     void setParticipatingIn(Kahoot * kahoot);
     Kahoot * getParticipatingIn();
     void writeMessage(int type, std::string message);
-    void writeRemaining();
+    int writeRemaining();
     void toggleWrite(bool write);
 };
 
