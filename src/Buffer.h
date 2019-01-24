@@ -11,6 +11,7 @@ public:
     char * data;
     int len = 64;
     int pos = 0;
+    bool pending = false;
 
     Buffer();
     Buffer(const char* srcData, int srcLen);
@@ -19,6 +20,7 @@ public:
     int remaining();
     char * dataPos();
     void writeLater(char * data, int len);
+    void appendToBuffer(char * data, int len);
 };
 
 

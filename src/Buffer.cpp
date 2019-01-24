@@ -26,7 +26,7 @@ void Buffer::resize() {
 }
 
 int Buffer::remaining() {
-    return this->len - this->pos;
+    return (this->len - this->pos);
 }
 
 char *Buffer::dataPos() {
@@ -34,8 +34,16 @@ char *Buffer::dataPos() {
 }
 
 void Buffer::writeLater(char *remainingData, int dataLen) {
+    this->pending = true;
     this->len = dataLen;
     this->data = (char*) malloc(dataLen);
     memcpy(data,remainingData,dataLen);
+}
+
+void Buffer::appendToBuffer(char *incomingData, int incomingLen) {
+    int remaining = this->len - this->pos;
+    this->data = (char*) realloc(this->data + this->pos, remaining);
+    strncpy(this->data + remaining, incomingData, incomingLen);
+    this->pos = 0;
 }
 

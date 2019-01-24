@@ -11,7 +11,7 @@ void Server::run() {
     this->handlePoll();
 }
 
-int Server::initSocketConnection() {
+void Server::initSocketConnection() {
     //read config data
     std::ifstream configFile;
     configFile.open(".env");
@@ -34,11 +34,11 @@ int Server::initSocketConnection() {
     // set non-blocking mode
     fcntl(this->server_fd, F_SETFL, O_NONBLOCK);
 
-    sockaddr_in server_data {
-            .sin_family = AF_INET,
-            .sin_port = htons(std::stoi(serverPort)),
-            .sin_addr = {INADDR_ANY} //accept connection to all the IPs of the machine
-    };
+    sockaddr_in server_data {};
+    server_data.sin_family = AF_INET;
+    server_data.sin_port = htons(std::stoi(serverPort));
+    server_data.sin_addr = {INADDR_ANY}; //accept connection to all the IPs of the machine
+
 
     if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0)
         error(1, errno, "Binding socket failed");
@@ -50,7 +50,7 @@ int Server::initSocketConnection() {
     printf("Listening for client's connections\n");
 }
 
-int Server::handlePoll() {
+void Server::handlePoll() {
     this->epoll_fd = epoll_create1(0);
 
     epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
@@ -80,36 +80,41 @@ int Server::handlePoll() {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
                 int clientFd = client->getFd();
-                if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
-                    int count = recv(clientFd, this->buffer.dataPos(),this->buffer.remaining(),0);
+
+                // first send remaining data
+                if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
+                    if (client->writeRemaining() < 0)
+                        ee.events |= EPOLLERR;
+                }
+                // then accept new
+                else if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
+                    int count = recv(clientFd, client->receiver.dataPos(),client->receiver.remaining(),0);
                     if (count <= 0) {
                         error(0, errno, "Receiving message from client failed");
                         ee.events |= EPOLLERR;
                     }
                     else {
-                        this->buffer.pos += count;
-                        char * endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos);
-                        if (endOfMessage == nullptr && !buffer.remaining())
-                            buffer.resize();
+                        client->receiver.pos += count;
+                        char * endOfMessage = (char*) memchr(client->receiver.data, '\n', client->receiver.pos);
+                        if (endOfMessage == nullptr && !client->receiver.remaining())
+                            client->receiver.resize();
                         else {
                             do {
-                                int currentMessageLen = endOfMessage - buffer.data +1;
+                                int currentMessageLen = endOfMessage - client->receiver.data +1;
                                 char * msg = new char[currentMessageLen];
-                                strncpy(msg,buffer.data,currentMessageLen-1);
+                                strncpy(msg,client->receiver.data,currentMessageLen-1);
                                 //std::cout << msg << std::endl;
                                 this->handleClient(client, msg);
                                 delete [] msg;
-                                int nextMessageBegin = buffer.pos - currentMessageLen;
-                                memmove(buffer.data, endOfMessage+1,nextMessageBegin);
-                                buffer.pos = nextMessageBegin;
-                            } while((endOfMessage = (char*) memchr(this->buffer.data, '\n', this->buffer.pos)));
+                                int nextMessageBegin = client->receiver.pos - currentMessageLen;
+                                memmove(client->receiver.data, endOfMessage+1, nextMessageBegin);
+                                client->receiver.pos = nextMessageBegin;
+                            } while((endOfMessage = (char*) memchr(client->receiver.data, '\n', client->receiver.pos)));
                         }
                     }
                 }
-                else if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
-                    client->writeRemaining();
-                }
-                else if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
+                // disconnect client when error occurred
+                if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
                     this->deleteClient(client);
                 }
             }
@@ -136,7 +141,7 @@ int Server::getMessageCode(char *buffer) {
     return num1*10 + num2;
 }
 
-int Server::handleClient(Client *client, char * buffer) {
+void Server::handleClient(Client *client, char * buffer) {
     int msgcode = getMessageCode(buffer);
     switch(msgcode) {
         case USER_DISCONNECTED:
@@ -181,7 +186,7 @@ void Server::createKahoot(char *data, Client * owner) {
     this->sendRooms(nullptr);
 }
 
-int Server::sendRooms(Client * client) {
+void Server::sendRooms(Client * client) {
     std::string data = "";
     for (auto k : this->kahoots) {
         data += std::to_string(k.second->getId()) + "|";
@@ -210,7 +215,7 @@ int Server::generateUniqueId() {
     return id;
 }
 
-int Server::addToRoom(char *buffer, Client *client) {
+void Server::addToRoom(char *buffer, Client *client) {
     char * ptr = strtok(buffer,"|");
     // skip 1st value indicating communicate type
     ptr = strtok(NULL, "|");
