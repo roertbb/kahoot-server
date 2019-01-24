@@ -69,20 +69,18 @@ void Client::writeMessage(int type, std::string message) {
 }
 
 void Client::writeRemaining() {
-    do {
-        int rem = this->toWrite.remaining();
-        int sent = send(this->fd, this->toWrite.data+this->toWrite.pos, rem,MSG_DONTWAIT);
-        if (sent == rem) {
-            this->toggleWrite(false);
-        }
-        else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN)
-            error(0,errno,"Sending data failed");
-        else
-            this->toWrite.pos += sent;
-    } while(false);
+    int rem = this->toWrite.remaining();
+    int sent = send(this->fd, this->toWrite.data+this->toWrite.pos, rem,MSG_DONTWAIT);
+    if (sent == rem) {
+        this->toggleWrite(false);
+    }
+    else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN)
+        error(0,errno,"Sending data failed");
+    else
+        this->toWrite.pos += sent;
 }
 
 void Client::toggleWrite(bool write) {
-    epoll_event ee {EPOLLIN|EPOLLRDHUP|(write?EPOLLOUT:0), {.ptr=this}};
+    epoll_event ee {EPOLLIN|EPOLLRDHUP|(write?EPOLLOUT:0), {.fd=this->fd}};
     epoll_ctl(this->epoll_fd, EPOLL_CTL_MOD, this->fd, &ee);
 }
