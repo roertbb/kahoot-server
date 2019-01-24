@@ -80,7 +80,13 @@ int Server::handlePoll() {
             // handle existing user - loop over clients and handle their requests, if so read data and handle their request
             for (Client * client : this->clients) {
                 int clientFd = client->getFd();
-                if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
+
+                // first send remaining data
+                if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
+                    client->writeRemaining();
+                }
+                // then accept new
+                else if (ee.events & EPOLLIN && ee.data.fd == clientFd) {
                     int count = recv(clientFd, this->buffer.dataPos(),this->buffer.remaining(),0);
                     if (count <= 0) {
                         error(0, errno, "Receiving message from client failed");
@@ -106,10 +112,8 @@ int Server::handlePoll() {
                         }
                     }
                 }
-                else if (ee.events & EPOLLOUT && ee.data.fd == clientFd) {
-                    client->writeRemaining();
-                }
-                else if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
+                // disconnect client when error occured
+                if (ee.events & ~(EPOLLIN|EPOLLOUT) && ee.data.fd == clientFd) {
                     this->deleteClient(client);
                 }
             }
