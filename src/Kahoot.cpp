@@ -71,7 +71,7 @@ int Kahoot::getTimerFd() {
 
 void Kahoot::setTimer() {
 
-    int wait_time = breaktime;
+    int wait_time = 5;
     if (this->state == stateQuestion) {
         wait_time = this->times[this->currentQuestion];
     }
@@ -103,7 +103,6 @@ int Kahoot::next() {
             client->writeMessage(START_KAHOOT,"");
         }
         this->setTimer();
-        return 0;
     } else if (this->state == statePrepQuestion) {
         this->state = stateQuestion;
         this->writeMessageToOwner(SEND_QUESTION,"send question");
@@ -111,7 +110,6 @@ int Kahoot::next() {
             client->writeMessage(SEND_QUESTION,this->questions[this->currentQuestion]);
         }
         this->setTimer();
-        return 0;
     } else if (this->state == stateQuestion) {
         this->state = stateAnswers;
         this->writeMessageToOwner(SEND_ANSWER_CORRECT,"");
@@ -142,14 +140,13 @@ int Kahoot::next() {
         // clear answers map
         this->receivedAnswers.clear();
         this->setTimer();
-        return 0;
     } else if (this->state == stateAnswers) {
         if (this->currentQuestion == this->questions.size()-1) {
             // last question - do clean up - perhaps return -1 in order to notify server that it was the last question
             this->writeMessageToOwner(SEND_PREPARE_BEFORE_NEXT,"0|");
             for (Client * client : this->connectedPlayers) {
                 // send message to user with score and placement
-                for (int i=0; i<this->points.size(); i++) {
+                for (unsigned int i=0; i<this->points.size(); i++) {
                     if (this->points[i].first == client->getNick()) {
                         client->writeMessage(SEND_PREPARE_BEFORE_NEXT,"0|" + std::to_string(i+1) + "|" +std::to_string(this->points[i].second));
                         break;
@@ -166,13 +163,12 @@ int Kahoot::next() {
                 client->writeMessage(SEND_PREPARE_BEFORE_NEXT,"");
             }
             this->setTimer();
-            return 0;
         }
     }
+    return 0;
 }
 
-int Kahoot::receiveAnswer(Client *client, char *buffer) {
-    //TODO: skip msgcode when receiving message;
+void Kahoot::receiveAnswer(Client *client, char *buffer) {
     char * ptr = strtok(buffer, "|");
     ptr = strtok(NULL, "|");
 
@@ -189,7 +185,7 @@ int Kahoot::receiveAnswer(Client *client, char *buffer) {
         // calculate points
         int points = (int) (1000.0 * remainingTime / (float) this->times[this->currentQuestion]);
         // assign value to user
-        for(int i=0; i<this->points.size(); i++) {
+        for(unsigned int i=0; i<this->points.size(); i++) {
             if (this->points[i].first == client->getNick()) {
                 this->points[i].second = this->points[i].second + points;
             }

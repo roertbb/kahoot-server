@@ -94,6 +94,9 @@ int Client::writeRemaining() {
 }
 
 void Client::toggleWrite(bool write) {
-    epoll_event ee {EPOLLIN|EPOLLRDHUP|(write?EPOLLOUT:0), {.fd=this->fd}};
+    unsigned int flags = EPOLLIN|EPOLLRDHUP;
+    if (write)
+        flags |= EPOLLOUT;
+    epoll_event ee {flags, {.fd=this->fd}};
     epoll_ctl(this->epoll_fd, EPOLL_CTL_MOD, this->fd, &ee);
 }

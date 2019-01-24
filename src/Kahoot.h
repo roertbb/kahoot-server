@@ -16,8 +16,6 @@
 #include "Client.h"
 #include "Server.h"
 
-static int breaktime = 5;
-
 enum kahootState {
     stateNotStarted,
     statePrepQuestion,
@@ -37,7 +35,7 @@ class Kahoot {
     std::map<Client*,std::string> receivedAnswers;
     int timer_fd;
     int epoll_fd;
-    int currentQuestion;
+    unsigned int currentQuestion;
     int state;
 public:
     Kahoot(Client * owner, char * question_data, int id, int epoll_fd);
@@ -51,7 +49,7 @@ public:
     bool isUserAlreadyInRoom(std::string nick);
     int next();
     void setTimer();
-    int receiveAnswer(Client * client, char * buffer);
+    void receiveAnswer(Client * client, char * buffer);
     void sendPlayersInRoom(Client * client);
     float getRemainingTime();
     void ownerDisconnected();

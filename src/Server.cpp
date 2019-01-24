@@ -11,7 +11,7 @@ void Server::run() {
     this->handlePoll();
 }
 
-int Server::initSocketConnection() {
+void Server::initSocketConnection() {
     //read config data
     std::ifstream configFile;
     configFile.open(".env");
@@ -34,11 +34,11 @@ int Server::initSocketConnection() {
     // set non-blocking mode
     fcntl(this->server_fd, F_SETFL, O_NONBLOCK);
 
-    sockaddr_in server_data {
-            .sin_family = AF_INET,
-            .sin_port = htons(std::stoi(serverPort)),
-            .sin_addr = {INADDR_ANY} //accept connection to all the IPs of the machine
-    };
+    sockaddr_in server_data {};
+    server_data.sin_family = AF_INET;
+    server_data.sin_port = htons(std::stoi(serverPort));
+    server_data.sin_addr = {INADDR_ANY}; //accept connection to all the IPs of the machine
+
 
     if ((bind(this->server_fd, (sockaddr *) &server_data, sizeof(server_data))) < 0)
         error(1, errno, "Binding socket failed");
@@ -50,7 +50,7 @@ int Server::initSocketConnection() {
     printf("Listening for client's connections\n");
 }
 
-int Server::handlePoll() {
+void Server::handlePoll() {
     this->epoll_fd = epoll_create1(0);
 
     epoll_event ee {EPOLLIN, {.fd = this->server_fd}};
@@ -141,7 +141,7 @@ int Server::getMessageCode(char *buffer) {
     return num1*10 + num2;
 }
 
-int Server::handleClient(Client *client, char * buffer) {
+void Server::handleClient(Client *client, char * buffer) {
     int msgcode = getMessageCode(buffer);
     switch(msgcode) {
         case USER_DISCONNECTED:
@@ -186,7 +186,7 @@ void Server::createKahoot(char *data, Client * owner) {
     this->sendRooms(nullptr);
 }
 
-int Server::sendRooms(Client * client) {
+void Server::sendRooms(Client * client) {
     std::string data = "";
     for (auto k : this->kahoots) {
         data += std::to_string(k.second->getId()) + "|";
@@ -215,7 +215,7 @@ int Server::generateUniqueId() {
     return id;
 }
 
-int Server::addToRoom(char *buffer, Client *client) {
+void Server::addToRoom(char *buffer, Client *client) {
     char * ptr = strtok(buffer,"|");
     // skip 1st value indicating communicate type
     ptr = strtok(NULL, "|");

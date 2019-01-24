@@ -52,14 +52,14 @@ class Server {
     Buffer buffer;
 public:
     void run();
-    int initSocketConnection();
-    int handlePoll();
-    int handleClient(Client * client, char * buffer);
+    void  initSocketConnection();
+    void handlePoll();
+    void handleClient(Client * client, char * buffer);
     int getMessageCode(char * buffer);
     void createKahoot(char * data, Client * owner);
-    int sendRooms(Client * client);
+    void sendRooms(Client * client);
     int generateUniqueId();
-    int addToRoom(char * buffer, Client * client);
+    void addToRoom(char * buffer, Client * client);
     void deleteKahoot(std::pair<const int,Kahoot*> );
     void deleteClient(Client *client);
 };
